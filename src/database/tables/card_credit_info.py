@@ -1,20 +1,17 @@
 from datetime import date
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import Date, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .base import Base, YYYYMMDate, YYYYMMDDDate
-
-if TYPE_CHECKING:
-    from .card_user_info import CardUserInfo
+from .base import Base
 
 
 class CardCreditInfo(Base):
     __tablename__ = "CARD_CREDIT_INFO"
 
-    발급회원번호: Mapped[str] = mapped_column(String, ForeignKey("CARD_USER_INFO.발급회원번호"), primary_key=True)
-    기준년월: Mapped[Optional[date]] = mapped_column(YYYYMMDate, nullable=True)
+    기준년월: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    발급회원번호: Mapped[str] = mapped_column(String, primary_key=True)
     최초한도금액: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     카드이용한도금액: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     CA한도금액: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -24,7 +21,7 @@ class CardCreditInfo(Base):
     CL이자율_할인전: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     RV일시불이자율_할인전: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     RV현금서비스이자율_할인전: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    RV신청일자: Mapped[Optional[date]] = mapped_column(YYYYMMDDDate, nullable=True)
+    RV신청일자: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     RV약정청구율: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     RV최소결제비율: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     자발한도감액횟수_R12M: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
