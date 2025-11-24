@@ -1,7 +1,14 @@
-from src.database.insert import insert_card_user_info_safe
+from src.database import *
+
 
 if __name__ == "__main__":
-    insert_card_user_info_safe(
-        csv_path="/home/hoesu.chung/GITHUB/project/data/sample.csv",
-        create_table=True
+    
+    engine = Base.get_engine()
+    Base.metadata.create_all(engine)
+    
+    insert_data(
+        engine=engine,
+        csv_path="/home/hoesu.chung/GITHUB/project/data/201807_회원정보.csv",
+        target_table=CardUserInfo,
+        batch_size=1000,
     )
