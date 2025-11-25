@@ -1,7 +1,7 @@
 from typing import Optional
 
 from sqlalchemy import Float, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, event
 
 from .base import Base
 
@@ -169,3 +169,8 @@ class IndividualCB(Base):
 
     def __repr__(self) -> str:
         return f'IndividualCb(ID={self.ID!r}, STDT={self.STDT!r})'
+
+@event.listens_for(IndividualCB, 'before_insert', propagate=True)
+@event.listens_for(IndividualCB, 'before_update', propagate=True)
+def preprocess(mapper, connection, target):
+    pass

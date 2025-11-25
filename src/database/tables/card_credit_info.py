@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional
 
 from sqlalchemy import Date, Float, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, event
 
 from .base import Base
 
@@ -55,3 +55,8 @@ class CardCreditInfo(Base):
 
     def __repr__(self) -> str:
         return f"CardCreditInfo(기준년월={self.기준년월!r}, 발급회원번호={self.발급회원번호!r})"
+
+@event.listens_for(CardCreditInfo, 'before_insert', propagate=True)
+@event.listens_for(CardCreditInfo, 'before_update', propagate=True)
+def preprocess(mapper, connection, target):
+    pass
