@@ -1,4 +1,4 @@
-[data-integration-protection-project]
+[project]
 name = "data-integration-protection-project"
 version = "0.1.0"
 description = "Quantifying Data Disclosure Risk via Graph Networks"
