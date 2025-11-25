@@ -1,6 +1,5 @@
 from .tables import *
-from .insert import insert_data
-from .select import select_data
+from .actions import *
 
 __all__ = [
     "Base",
