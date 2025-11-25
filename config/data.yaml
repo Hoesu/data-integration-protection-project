@@ -1,0 +1,10 @@
+mode: "data"
+
+# 실행할 작업 선택: "insert" 또는 "select"
+action: "insert"
+
+# INSERT 작업 설정
+insert:
+  csv_path: "data/201807_회원정보.csv"
+  target_table: "CardUserInfo"
+  batch_size: 1000
