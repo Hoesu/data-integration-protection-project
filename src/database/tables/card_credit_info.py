@@ -60,3 +60,8 @@ class CardCreditInfo(Base):
 @event.listens_for(CardCreditInfo, 'before_update', propagate=True)
 def preprocess(mapper, connection, target):
     pass
+
+
+@event.listens_for(CardCreditInfo, 'load', propagate=True)
+def postprocess(mapper, connection, target):
+    pass

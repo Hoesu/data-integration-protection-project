@@ -107,3 +107,8 @@ def preprocess(mapper, connection, target):
             setattr(target, column.name, Base._normalize_yyyymmdd_date(value))
         else:
             setattr(target, column.name, Base._normalize_missing_value(value))
+
+
+@event.listens_for(CardUserInfo, 'load', propagate=True)
+def postprocess(mapper, connection, target):
+    pass

@@ -174,3 +174,7 @@ class IndividualCB(Base):
 @event.listens_for(IndividualCB, 'before_update', propagate=True)
 def preprocess(mapper, connection, target):
     pass
+
+@event.listens_for(IndividualCB, 'load', propagate=True)
+def postprocess(mapper, connection, target):
+    pass
