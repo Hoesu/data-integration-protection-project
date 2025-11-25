@@ -6,12 +6,12 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 from tqdm import tqdm
 
-from .tables import Base
+from .tables import *
 
 
-def insert_data(
+def _insert_data(
     engine: Engine,
-    csv_path: Path,
+    csv_path: str,
     target_table: Base,
     batch_size: int = 1000,
 ) -> int:
@@ -22,7 +22,7 @@ def insert_data(
     ----------
         engine: sqlalchemy.Engine
             SQLAlchemy 엔진
-        csv_path: Path
+        csv_path: str
             CSV 파일 절대경로
         target_table: database.tables.Base
             삽입할 테이블
@@ -78,7 +78,7 @@ def insert_data(
     return inserted_count
 
 
-def select_data(
+def _select_data(
     engine: Engine,
     source_table: Base,
     limit: int | None = None,
@@ -176,3 +176,36 @@ def select_data(
         finally:
             session.close()
             engine.dispose()
+
+
+def _get_table_class(table_name: str):
+    table_map = {
+        "CardUserInfo": CardUserInfo,
+        "CardCreditInfo": CardCreditInfo,
+        "IndividualCB": IndividualCB,
+    }
+    if table_name not in table_map:
+        raise ValueError()
+    return table_map[table_name]
+
+
+def execute_query(engine: Engine, config: dict) -> int | pd.DataFrame:
+    """
+    """
+    if config["action"] == "insert":
+        return _insert_data(
+            engine=engine,
+            csv_path=Path(config["insert"]["csv_path"]),
+            target_table=_get_table_class(config["insert"]["target_table"]),
+            batch_size=config["insert"]["batch_size"]
+        )
+    elif config["action"] == "select":
+        return _select_data(
+            engine=engine,
+            source_table=_get_table_class(config["select"]["source_table"]),
+            limit=config["select"]["limit"],
+            filters=config["select"]["filters"],
+            order_by=config["select"]["order_by"],
+        )
+    else:
+        raise ValueError()
