@@ -5,7 +5,7 @@ import networkx as nx
 
 from src.database import Base, execute_query
 from src.metric import compute_pairwise_dist
-from src.preprocess import allocate_properties, impute_data
+from src.preprocess import allocate_properties, impute_data, normalize_data
 from src.risk import calculate_risk
 
 logger = logging.getLogger('project.builder')
@@ -25,8 +25,9 @@ class DataProtectionPipeline:
         engine = Base.get_engine()
         Base.metadata.create_all(engine)
         raw_data = execute_query(engine, self.config)
+        imputed_data = impute_data(raw_data, self.properties, self.config)
+        self.data = normalize_data(imputed_data, self.config)
         self.properties = allocate_properties(raw_data, self.config)        
-        self.data = impute_data(raw_data, self.properties, self.config)
 
     def _compute_edge_weight(
         self,
