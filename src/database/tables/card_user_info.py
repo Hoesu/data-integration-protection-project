@@ -102,11 +102,7 @@ def preprocess(mapper, connection, target):
 
     for column in mapper.columns:
         value = getattr(target, column.name, None)
-        if column.name in [
-            '기준년월',
-            '최종유효년월_신용_이용가능',
-            '최종유효년월_신용_이용',
-        ]:
+        if column.name in ['기준년월', '최종유효년월_신용_이용가능', '최종유효년월_신용_이용']:
             setattr(target, column.name, Base._normalize_yyyymm_date(value))
         elif column.name in ['입회일자_신용', '최종카드발급일자']:
             setattr(target, column.name, Base._normalize_yyyymmdd_date(value))
