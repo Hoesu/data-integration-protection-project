@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 
+from src.metric.numerical import compute_interrow_n_dist
+from src.metric.categorical import compute_interrow_c_dist
+
 
 def compute_interrow_dist(
     x: dict,
@@ -36,11 +39,16 @@ def compute_interrow_dist(
     >>> compute_interrow_dist(x, y, properties)
     5.5
     """
-    # TODO: compute_interrow_n_dist 함수 호출하여 수치형 거리 계산
-    # TODO: compute_interrow_c_dist 함수 호출하여 범주형 거리 계산
-    # TODO: 수치형과 범주형 거리를 가중 평균 또는 합으로 결합
-    # TODO: 최종 거리 값 반환
-    pass
+    # 수치형 거리 계산
+    numeric_dist = compute_interrow_n_dist(x, y, properties)
+    
+    # 범주형 거리 계산
+    categorical_dist = compute_interrow_c_dist(x, y, properties)
+    
+    # 수치형과 범주형 거리를 합으로 결합
+    total_dist = numeric_dist + categorical_dist
+    
+    return total_dist
 
 def compute_pairwise_dist(
     data: pd.DataFrame,
@@ -68,13 +76,29 @@ def compute_pairwise_dist(
     >>> dist_matrix.shape
     (100, 100)
     """
-    # TODO: 데이터프레임의 행 개수 확인
-    # TODO: n x n 크기의 거리 행렬 초기화 (numpy 배열)
-    # TODO: 모든 행 쌍 (i, j)에 대해:
-    #   - i번째 행과 j번째 행을 딕셔너리 형태로 변환
-    #   - compute_interrow_dist 함수 호출하여 거리 계산
-    #   - 거리 행렬의 [i, j] 위치에 거리 값 저장
-    #   - 대칭 행렬이므로 [j, i]에도 동일한 값 저장 (최적화 고려)
-    # TODO: 대각선 요소는 0으로 설정 (자기 자신과의 거리)
-    # TODO: 거리 행렬 반환
-    pass
+    # 데이터프레임의 행 개수 확인
+    n = len(data)
+    
+    # n x n 크기의 거리 행렬 초기화
+    dist_matrix = np.zeros((n, n), dtype=float)
+    
+    # 모든 행 쌍 (i, j)에 대해 거리 계산
+    # 대칭 행렬이므로 i <= j인 경우만 계산하고 최적화
+    for i in range(n):
+        # 자기 자신과의 거리는 0 (대각선 요소)
+        dist_matrix[i, i] = 0.0
+        
+        # i < j인 경우만 계산하고 대칭 위치에도 동일한 값 저장
+        for j in range(i + 1, n):
+            # i번째 행과 j번째 행을 딕셔너리 형태로 변환
+            x_dict = data.iloc[i].to_dict()
+            y_dict = data.iloc[j].to_dict()
+            
+            # compute_interrow_dist 함수 호출하여 거리 계산
+            distance = compute_interrow_dist(x_dict, y_dict, properties)
+            
+            # 거리 행렬의 [i, j]와 [j, i] 위치에 거리 값 저장 (대칭 행렬)
+            dist_matrix[i, j] = distance
+            dist_matrix[j, i] = distance
+    
+    return dist_matrix

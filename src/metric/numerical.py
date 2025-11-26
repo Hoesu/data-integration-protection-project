@@ -1,4 +1,7 @@
+import logging
 import numpy as np
+
+logger = logging.getLogger('project.metric.numerical')
 
 
 def _l1_distance(
@@ -25,11 +28,13 @@ def _l1_distance(
     >>> _l1_distance(np.array([1, 2, 3]), np.array([4, 5, 6]))
     9.0
     """
-    # TODO: x와 y 배열의 shape이 같은지 검증
-    # TODO: 각 요소별로 절댓값 차이 계산: |x_i - y_i|
-    # TODO: 모든 절댓값 차이의 합 계산
-    # TODO: 합계 반환
-    pass
+    if x.shape != y.shape:
+        raise ValueError(f"x와 y의 shape이 일치해야 합니다. x.shape={x.shape}, y.shape={y.shape}")
+    
+    diff = np.abs(x - y)
+    distance = np.sum(diff)
+    
+    return float(distance)
 
 
 def _l2_distance(
@@ -56,12 +61,14 @@ def _l2_distance(
     >>> _l2_distance(np.array([1, 2, 3]), np.array([4, 5, 6]))
     5.196...
     """
-    # TODO: x와 y 배열의 shape이 같은지 검증
-    # TODO: 각 요소별로 차이의 제곱 계산: (x_i - y_i)^2
-    # TODO: 모든 제곱 차이의 합 계산
-    # TODO: 합의 제곱근 계산 (sqrt)
-    # TODO: 제곱근 값 반환
-    pass
+    if x.shape != y.shape:
+        raise ValueError(f"x와 y의 shape이 일치해야 합니다. x.shape={x.shape}, y.shape={y.shape}")
+    
+    diff_squared = (x - y) ** 2
+    sum_squared = np.sum(diff_squared)
+    distance = np.sqrt(sum_squared)
+    
+    return float(distance)
 
 
 def _mahalanobis_distance(
@@ -91,13 +98,22 @@ def _mahalanobis_distance(
     >>> _mahalanobis_distance(np.array([1, 2]), np.array([3, 4]), cov)
     2.828...
     """
-    # TODO: x와 y 배열의 shape이 같은지 검증
-    # TODO: cov가 None인 경우 단위 행렬로 초기화
-    # TODO: cov 행렬의 역행렬 계산 (공분산 행렬의 역행렬)
-    # TODO: 차이 벡터 계산: diff = x - y
-    # TODO: Mahalanobis 거리 공식 적용: sqrt(diff^T * inv(cov) * diff)
-    # TODO: 거리 값 반환
-    pass
+    if x.shape != y.shape:
+        raise ValueError(f"x와 y의 shape이 일치해야 합니다. x.shape={x.shape}, y.shape={y.shape}")
+    
+    if cov is None:
+        cov = np.eye(len(x))
+    
+    try:
+        inv_cov = np.linalg.inv(cov)
+    except np.linalg.LinAlgError:
+        # 역행렬이 존재하지 않는 경우 의사역행렬 사용
+        inv_cov = np.linalg.pinv(cov)
+    
+    diff = x - y
+    distance = np.sqrt(diff.T @ inv_cov @ diff)
+    
+    return float(distance)
 
 
 def compute_interrow_n_dist(
@@ -131,13 +147,49 @@ def compute_interrow_n_dist(
     >>> compute_interrow_n_dist(x, y, properties)
     10005.0
     """
-    # TODO: properties에서 'numeric' 키 확인
-    # TODO: 각 메트릭별로 그룹화된 컬럼 리스트 추출
-    # TODO: 각 메트릭 그룹에 대해:
-    #   - 해당 메트릭에 속한 컬럼들의 값 배열 추출 (x, y에서)
-    #   - 적절한 거리 함수 호출 (_l2_distance, _l1_distance, _mahalanobis_distance)
-    #   - mahalanobis의 경우 공분산 행렬 정보 필요 (properties 또는 별도 계산)
-    #   - 메트릭별 거리 값 저장
-    # TODO: 모든 메트릭 그룹의 거리를 가중 평균 또는 합으로 계산
-    # TODO: 최종 거리 값 반환
-    pass
+    if 'numeric' not in properties:
+        logger.debug('수치형 속성이 없어 거리 0.0 반환')
+        return 0.0
+    
+    numeric_props = properties['numeric']
+    if not numeric_props:
+        logger.debug('수치형 속성이 비어있어 거리 0.0 반환')
+        return 0.0
+    
+    logger.debug(f'수치형 거리 계산 시작: {len(numeric_props)}개 메트릭 그룹')
+    distances = []
+    
+    for metric, columns in numeric_props.items():
+        if not columns:
+            continue
+        
+        # 해당 메트릭에 속한 컬럼들의 값 배열 추출
+        x_values = np.array([x.get(col, 0) for col in columns])
+        y_values = np.array([y.get(col, 0) for col in columns])
+        
+        if metric == 'l1':
+            dist = _l1_distance(x_values, y_values)
+            logger.debug(f'L1 거리 계산: {len(columns)}개 컬럼, 거리={dist:.4f}')
+        elif metric == 'l2':
+            dist = _l2_distance(x_values, y_values)
+            logger.debug(f'L2 거리 계산: {len(columns)}개 컬럼, 거리={dist:.4f}')
+        elif metric == 'mahalanobis':
+            # Mahalanobis의 경우 공분산 행렬이 필요하지만, 
+            # properties에 없으면 단위 행렬 사용
+            cov = None
+            if 'covariance' in properties.get('numeric', {}):
+                cov = properties['numeric']['covariance'].get(metric, None)
+            dist = _mahalanobis_distance(x_values, y_values, cov)
+            logger.debug(f'Mahalanobis 거리 계산: {len(columns)}개 컬럼, 거리={dist:.4f}')
+        else:
+            # 기본값으로 L2 거리 사용
+            logger.warning(f'알 수 없는 메트릭 "{metric}", L2 거리 사용')
+            dist = _l2_distance(x_values, y_values)
+        
+        distances.append(dist)
+    
+    # 모든 메트릭 그룹의 거리를 합으로 계산
+    total_distance = sum(distances) if distances else 0.0
+    logger.debug(f'수치형 거리 계산 완료: 총 거리={total_distance:.4f}')
+    
+    return total_distance
