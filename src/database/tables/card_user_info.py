@@ -117,6 +117,8 @@ def preprocess(mapper, connection, target):
 @listens_for(CardUserInfo, 'load', propagate=True)
 def postprocess(target, context):
     if target.연령 is not None:
-        target.연령 = int(target.연령.replace('대', ''))
+        target.연령 = target.연령.replace('대', '')
+        target.연령 = target.연령.replace('이상', '')
+        target.연령 = int(target.연령)
     if target.Life_Stage is not None:
         target.Life_Stage = int(target.Life_Stage.split('.')[0])
