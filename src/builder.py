@@ -15,7 +15,7 @@ class DataProtectionPipeline:
 
     def __init__(self, config: dict):
         self.config = config
-        
+
     def _insert_data(self):
         engine = Base.get_engine()
         Base.metadata.create_all(engine)
@@ -27,7 +27,7 @@ class DataProtectionPipeline:
         raw_data = execute_query(engine, self.config)
         self.properties = allocate_properties(raw_data, self.config)
         imputed_data = impute_data(raw_data, self.properties, self.config)
-        self.data = normalize_data(imputed_data, self.config)        
+        self.data = normalize_data(imputed_data, self.config)
 
     def _compute_edge_weight(
         self,
@@ -162,29 +162,29 @@ class DataProtectionPipeline:
         pass
 
     def run(self) -> None:
-        
+
         logger.info('Pipeline started')
-        
+
         if self.config['mode'] == 'data':
             self._insert_data()
             logger.info(f'Data inserted: {self.inserted_rows} rows')
             logger.info('Pipeline completed (data insertion mode)')
             return
-        
+
         self._prepare_data()
         logger.info(f'Data shape: {self.data.shape}')
         logger.info(f'Properties: {self.properties}')
-        
+
         # 그래프 구축
         # TODO: graph = self._build_graph(self.data, self.properties) 호출
         # TODO: logger.info로 그래프 구축 완료 로그 출력
-        
+
         # 위험도 계산
         # TODO: disclosure_risk = self._calculate_risk(graph, self.data) 호출
         # TODO: logger.info로 위험도 계산 완료 로그 출력
-        
+
         # 결과 저장
         # TODO: self._save_results(self.data, graph, disclosure_risk) 호출
         # TODO: logger.info로 결과 저장 완료 로그 출력
-        
+
         logger.info('Pipeline completed')
