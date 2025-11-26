@@ -25,9 +25,9 @@ class DataProtectionPipeline:
         engine = Base.get_engine()
         Base.metadata.create_all(engine)
         raw_data = execute_query(engine, self.config)
+        self.properties = allocate_properties(raw_data, self.config)
         imputed_data = impute_data(raw_data, self.properties, self.config)
-        self.data = normalize_data(imputed_data, self.config)
-        self.properties = allocate_properties(raw_data, self.config)        
+        self.data = normalize_data(imputed_data, self.config)        
 
     def _compute_edge_weight(
         self,
