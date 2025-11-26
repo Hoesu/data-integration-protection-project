@@ -31,7 +31,7 @@ class Base(DeclarativeBase):
             return None
         if pd.isna(value):
             return None
-        if isinstance(value, str) and value.strip().lower() in ('nan', '_'):
+        if isinstance(value, str) and value.strip().lower() == 'nan':
             return None
         return value
 

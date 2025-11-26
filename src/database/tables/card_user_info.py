@@ -1,6 +1,7 @@
 from datetime import date
 
-from sqlalchemy import Date, Integer, String, event
+from sqlalchemy import Date, Integer, String
+from sqlalchemy.event import listens_for
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -93,15 +94,19 @@ class CardUserInfo(Base):
         return f'CardUserInfo(발급회원번호={self.발급회원번호!r}, 기준년월={self.기준년월!r})'
 
 
-@event.listens_for(CardUserInfo, 'before_insert', propagate=True)
-@event.listens_for(CardUserInfo, 'before_update', propagate=True)
+@listens_for(CardUserInfo, 'before_insert', propagate=True)
+@listens_for(CardUserInfo, 'before_update', propagate=True)
 def preprocess(mapper, connection, target):
     if target.발급회원번호 is None:
         raise ValueError('발급회원번호는 필수 필드입니다.')
 
     for column in mapper.columns:
         value = getattr(target, column.name, None)
-        if column.name in ['기준년월', '최종유효년월_신용_이용가능', '최종유효년월_신용_이용']:
+        if column.name in [
+            '기준년월',
+            '최종유효년월_신용_이용가능',
+            '최종유효년월_신용_이용',
+        ]:
             setattr(target, column.name, Base._normalize_yyyymm_date(value))
         elif column.name in ['입회일자_신용', '최종카드발급일자']:
             setattr(target, column.name, Base._normalize_yyyymmdd_date(value))
@@ -109,6 +114,9 @@ def preprocess(mapper, connection, target):
             setattr(target, column.name, Base._normalize_missing_value(value))
 
 
-@event.listens_for(CardUserInfo, 'load', propagate=True)
-def postprocess(mapper, connection, target):
-    pass
+@listens_for(CardUserInfo, 'load', propagate=True)
+def postprocess(target, context):
+    if target.연령 is not None:
+        target.연령 = int(target.연령.replace('대', ''))
+    if target.Life_Stage is not None:
+        target.Life_Stage = int(target.Life_Stage.split('.')[0])
