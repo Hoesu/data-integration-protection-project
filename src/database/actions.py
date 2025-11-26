@@ -195,7 +195,7 @@ def execute_query(engine: Engine, config: dict) -> int | pd.DataFrame:
     if config["action"] == "insert":
         return _insert_data(
             engine=engine,
-            csv_path=Path(config["insert"]["csv_path"]),
+            csv_path=config["insert"]["csv_path"],
             target_table=_get_table_class(config["insert"]["target_table"]),
             batch_size=config["insert"]["batch_size"]
         )
