@@ -6,6 +6,7 @@ import networkx as nx
 from src.database import Base, execute_query
 from src.metric import compute_pairwise_dist
 from src.preprocess import allocate_properties, impute_data
+from src.risk import calculate_risk
 
 logger = logging.getLogger('project.builder')
 
@@ -133,8 +134,7 @@ class DataProtectionPipeline:
         dict
             노출 위험도 정보를 담은 딕셔너리
         """
-        # TODO: calculate_risk 함수 import 확인
-        # TODO: calculate_risk(graph, data, self.experiment_dict, self.config) 호출
+        # TODO: calculate_risk(graph, data, self.config) 호출
         # TODO: 계산된 위험도 반환
         pass
 
