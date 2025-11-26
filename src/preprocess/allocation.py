@@ -87,20 +87,6 @@ def allocate_properties(data: pd.DataFrame, config: dict) -> dict:
                 ...
             }
         }
-
-    Examples
-    --------
-    >>> allocate_properties(df)
-    {
-        'categorical': {
-            'levenshtein': ['name', 'address'],
-            'jaccard': ['tags']
-        },
-        'numeric': {
-            'l2': ['age', 'income'],
-            'l1': ['score']
-        }
-    }
     """
     # TODO: data 컬럼 첫행 뽑아서 컬럼명 순으로 정렬
     # TODO: _allocate_type 함수 호출하여 각 컬럼의 타입 리스트 획득
