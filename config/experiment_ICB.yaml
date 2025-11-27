@@ -1,0 +1,12 @@
+data:
+  action: "select"
+  source_table: "IndividualCB"
+  limit: 100
+  filters: {}
+  order_by: []
+
+preprocess:
+  exclude_columns: []
+  numeric_metric: "l2"
+  categorical_metric: "levenshtein"
+  imputation_neighbors: 5
