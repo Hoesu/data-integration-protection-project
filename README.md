@@ -4,6 +4,45 @@
 
 ---
 
+# 0. 현재 진행상황
+```bash
+.
+├── builder.py
+├── database
+│   ├── actions.py
+│   ├── __init__.py
+│   └── tables
+│       ├── ✅ base.py
+│       ├── card_credit_info.py
+│       ├── ✅ card_user_info.py
+│       ├── individual_cb.py
+│       └── ✅ __init__.py
+│
+├── __init__.py
+├── metric
+│   ├── categorical.py
+│   ├── combined.py
+│   ├── numerical.py
+│   └── __init__.py
+│
+├── preprocess
+│   ├── allocation.py
+│   ├── imputation.py
+│   ├── normalization.py
+│   └── __init__.py
+│
+├── risk
+│   ├── attribute.py
+│   ├── combined.py
+│   ├── identity.py
+│   └── __init__.py
+│
+└── utils
+    ├── config.py
+    ├── logger.py
+    └── __init__.py
+```
+
 ## 1. 프로젝트 목표
 
 다양한 데이터 합성, 마스킹 기법을 거친 공공 금융 데이터셋에 대한 개별 관측치와 데이터셋 단위 노출 위험 수준을 제시한다. 또한, 다양한 상황을 고려하여 최소한 3개 데이터셋에 제안 방법론을 적용한다.
