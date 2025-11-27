@@ -48,3 +48,11 @@ class Base(DeclarativeBase):
             return date(int(value // 100), int(value % 100), 1)
         except ValueError:
             return None
+
+    @staticmethod
+    def _count_months_between(date1: date, date2: date) -> int:
+        return int((date1.year - date2.year) * 12 + (date1.month - date2.month))
+
+    @staticmethod
+    def _count_days_between(date1: date, date2: date) -> int:
+        return int((date1 - date2).days)

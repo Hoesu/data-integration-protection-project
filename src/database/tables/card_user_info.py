@@ -102,19 +102,33 @@ def preprocess(mapper, connection, target):
 
     for column in mapper.columns:
         value = getattr(target, column.name, None)
+        ## YYYYMM 형식의 정수값을 YYYY-MM-01 형식의 날짜 타입으로 변환
         if column.name in ['기준년월', '최종유효년월_신용_이용가능', '최종유효년월_신용_이용']:
             setattr(target, column.name, Base._normalize_yyyymm_date(value))
+        ## YYYYMMDD 형식의 정수값을 YYYY-MM-DD 형식의 날짜 타입으로 변환
         elif column.name in ['입회일자_신용', '최종카드발급일자']:
             setattr(target, column.name, Base._normalize_yyyymmdd_date(value))
+        ## 'nan'으로 표기되어 있는 값들 결측치로 변환
         else:
             setattr(target, column.name, Base._normalize_missing_value(value))
 
 
 @listens_for(CardUserInfo, 'load', propagate=True)
 def postprocess(target, context):
+    ## 수치형으로 변환 가능한 범주형: 연령
+    ## 연령 문자열에서 숫자만 추출하여 수치형으로 변환
     if target.연령 is not None:
         target.연령 = target.연령.replace('대', '')
         target.연령 = target.연령.replace('이상', '')
         target.연령 = int(target.연령)
+    ## 수치형으로 변환 가능한 범주형: Life_Stage
+    ## 생애주기 단계만 추출하여 수치형으로 변환
     if target.Life_Stage is not None:
         target.Life_Stage = int(target.Life_Stage.split('.')[0])
+    ## 수치형으로 변환 가능한 범주형: 날짜 타입
+    ## 각 항목별로 가장 오래된 날짜 기준으로 경과 개월수/일수 계산
+    target.기준년월 = Base._count_months_between(date(2018, 7, 1), target.기준년월)
+    target.최종유효년월_신용_이용가능 = Base._count_months_between(date(2018, 3, 1), target.최종유효년월_신용_이용가능)
+    target.최종유효년월_신용_이용 = Base._count_months_between(date(2018, 6, 1), target.최종유효년월_신용_이용)
+    target.입회일자_신용 = Base._count_days_between(date(1990, 11, 1), target.입회일자_신용)
+    target.최종카드발급일자 = Base._count_days_between(date(2017, 5, 3), target.최종카드발급일자)
