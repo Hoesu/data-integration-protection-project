@@ -131,4 +131,4 @@ def postprocess(target, context):
     target.최종유효년월_신용_이용가능 = Base._count_months_between(date(2018, 3, 1), target.최종유효년월_신용_이용가능)
     target.최종유효년월_신용_이용 = Base._count_months_between(date(2018, 6, 1), target.최종유효년월_신용_이용)
     target.입회일자_신용 = Base._count_days_between(date(1990, 11, 1), target.입회일자_신용)
-    target.최종카드발급일자 = Base._count_days_between(date(2017, 5, 3), target.최종카드발급일자)
+    target.최종카드발급일자 = Base._count_days_between(date(2013, 5, 3), target.최종카드발급일자)
