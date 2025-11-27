@@ -131,20 +131,18 @@ def _get_table_class(table_name: str):
 
 
 def execute_query(engine: Engine, config: dict) -> int | pd.DataFrame:
-    if config['action'] == 'insert':
+    if config['data']["action"] == 'insert':
         return _insert_data(
             engine=engine,
-            csv_path=config['insert']['csv_path'],
-            target_table=_get_table_class(config['insert']['target_table']),
-            batch_size=config['insert']['batch_size'],
+            csv_path=config['data']['csv_path'],
+            target_table=_get_table_class(config['data']['target_table']),
+            batch_size=config['data']['batch_size'],
         )
-    elif config['action'] == 'select':
-        return _select_data(
-            engine=engine,
-            source_table=_get_table_class(config['select']['source_table']),
-            limit=config['select']['limit'],
-            filters=config['select']['filters'],
-            order_by=config['select']['order_by'],
-        )
-    else:
-        raise ValueError()
+
+    return _select_data(
+        engine=engine,
+        source_table=_get_table_class(config['data']['source_table']),
+        limit=config['data']['limit'],
+        filters=config['data']['filters'],
+        order_by=config['data']['order_by']
+    )

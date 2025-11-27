@@ -165,7 +165,7 @@ class DataProtectionPipeline:
 
         logger.info('Pipeline started')
 
-        if self.config['mode'] == 'data':
+        if self.config['data']['action'] == 'insert':
             self._insert_data()
             logger.info(f'Data inserted: {self.inserted_rows} rows')
             logger.info('Pipeline completed (data insertion mode)')

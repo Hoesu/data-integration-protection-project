@@ -1,5 +1,5 @@
-from .tables import Base
 from .actions import execute_query
+from .tables import Base
 
 __all__ = [
     "Base",

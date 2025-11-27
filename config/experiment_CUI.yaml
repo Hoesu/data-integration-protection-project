@@ -1,24 +1,12 @@
-mode: "experiment"
-
-# 실행할 작업 선택: "insert" 또는 "select"
-action: "select"
-
-# SELECT 작업 설정
-select:
+data:
+  action: "select"
   source_table: "CardUserInfo"
   limit: 100
   filters: {}
   order_by: []
 
 preprocess:
-  exclude_columns: [
-    "기준년월",
-    "발급회원번호",
-    "최종유효년월_신용_이용가능",
-    "최종유효년월_신용_이용",
-    "입회일자_신용",
-    "최종카드발급일자"
-  ]
+  exclude_columns: ["기준년월", "발급회원번호"]
   numeric_metric: "l2"
   categorical_metric: "levenshtein"
   imputation_neighbors: 5
