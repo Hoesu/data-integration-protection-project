@@ -127,8 +127,8 @@ def postprocess(target, context):
         target.Life_Stage = int(target.Life_Stage.split('.')[0])
     ## 수치형으로 변환 가능한 범주형: 날짜 타입
     ## 각 항목별로 가장 오래된 날짜 기준으로 경과 개월수/일수 계산
-    target.기준년월 = Base._count_months_between(date(2018, 7, 1), target.기준년월)
-    target.최종유효년월_신용_이용가능 = Base._count_months_between(date(2018, 3, 1), target.최종유효년월_신용_이용가능)
-    target.최종유효년월_신용_이용 = Base._count_months_between(date(2018, 6, 1), target.최종유효년월_신용_이용)
-    target.입회일자_신용 = Base._count_days_between(date(1990, 11, 1), target.입회일자_신용)
-    target.최종카드발급일자 = Base._count_days_between(date(2013, 5, 3), target.최종카드발급일자)
+    target.기준년월 = Base._count_months_between(target.기준년월, date(2018, 7, 1))
+    target.최종유효년월_신용_이용가능 = Base._count_months_between(target.최종유효년월_신용_이용가능, date(2018, 3, 1))
+    target.최종유효년월_신용_이용 = Base._count_months_between(target.최종유효년월_신용_이용, date(2018, 6, 1))
+    target.입회일자_신용 = Base._count_days_between(target.입회일자_신용, date(1990, 11, 1))
+    target.최종카드발급일자 = Base._count_days_between(target.최종카드발급일자, date(2013, 5, 3))
