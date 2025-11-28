@@ -1,7 +1,8 @@
-from .config import *
-from .logger import *
+from .logger import setup_logging
+from .result import save_config, setup_result_directory
 
 __all__ = [
-    "load_config",
-    "setup_logging",
+    'setup_logging',
+    'setup_result_directory',
+    'save_config',
 ]
