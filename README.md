@@ -8,6 +8,8 @@
 ```bash
 .
 ├── builder.py
+├── __init__.py
+│
 ├── database
 │   ├── ✅ actions.py
 │   ├── ✅ __init__.py
@@ -18,15 +20,13 @@
 │       ├── individual_cb.py
 │       └── ✅ __init__.py
 │
-├── __init__.py
-├── metric
-│   ├── categorical.py
-│   ├── combined.py
-│   ├── numerical.py
-│   └── __init__.py
+├── ✅ metric
+│   ├── ✅ heom.py
+│   ├── ✅ pairwise.py
+│   └── ✅ __init__.py
 │
 ├── preprocess
-│   ├── allocation.py
+│   ├── ✅ allocation.py
 │   ├── imputation.py
 │   ├── normalization.py
 │   └── __init__.py

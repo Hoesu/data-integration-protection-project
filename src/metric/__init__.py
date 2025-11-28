@@ -1,3 +1,7 @@
-from .combined import compute_interrow_dist, compute_pairwise_dist
+from .heom import heom_distance
+from .pairwise import pairwise_distance
 
-__all__ = ["compute_interrow_dist", "compute_pairwise_dist"]
+__all__ = [
+    "heom_distance",
+    "pairwise_distance",
+]
