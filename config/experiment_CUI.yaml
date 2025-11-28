@@ -7,6 +7,4 @@ data:
 
 preprocess:
   exclude_columns: ["기준년월", "발급회원번호"]
-  numeric_metric: "l2"
-  categorical_metric: "levenshtein"
   imputation_neighbors: 5
