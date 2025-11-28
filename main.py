@@ -18,5 +18,5 @@ if __name__ == '__main__':
     
     logger = setup_logging(log_path=result_dir)
 
-    pipeline = DataProtectionPipeline(config)
+    pipeline = DataProtectionPipeline(config, result_dir)
     pipeline.run()

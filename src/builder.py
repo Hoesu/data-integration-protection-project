@@ -1,20 +1,23 @@
 import logging
+from pathlib import Path
 
-import numpy as np
 import networkx as nx
+import numpy as np
 from sqlalchemy import Engine
 
 from src.database import Base, execute_query
-from src.preprocess import allocate_metadata, impute_data
 from src.metric import pairwise_distance
+from src.preprocess import allocate_metadata, impute_data
+from src.utils import visualize_graph
 
 logger = logging.getLogger('project.builder')
 
 
 class DataProtectionPipeline:
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, result_dir: Path):
         self.config = config
+        self.result_dir = result_dir
 
     def _insert_data(self, engine: Engine):
         execute_query(engine, self.config)
@@ -27,11 +30,15 @@ class DataProtectionPipeline:
     def _build_graph(self):
         node_identifier = self.config['graph']['node_identifier']
         scale_parameter = self.config['graph']['scale_parameter']
+        threshold = self.config['graph']['edge_threshold']
+
         distance_matrix = pairwise_distance(
             data=self.data,
             metadata=self.metadata
         )
         adjacency_matrix = np.exp(-distance_matrix / scale_parameter)
+        adjacency_matrix[adjacency_matrix < threshold] = 0
+
         self.graph = nx.from_numpy_array(
             A=adjacency_matrix,
             nodelist=self.data[node_identifier].tolist()
@@ -41,7 +48,11 @@ class DataProtectionPipeline:
         pass
 
     def _save_results(self):
-        pass
+        visualize_graph(
+            graph=self.graph,
+            result_dir=self.result_dir,
+            config=self.config
+        )
 
     def run(self) -> None:
         logger.info('Pipeline started')
@@ -60,10 +71,9 @@ class DataProtectionPipeline:
 
         self._build_graph()
         logger.info('Graph built')
-        breakpoint()
 
-        self._calculate_risk()
-        logger.info('Risk calculated')
+        # self._calculate_risk()
+        # logger.info('Risk calculated')
 
         self._save_results()
         logger.info('Results saved')

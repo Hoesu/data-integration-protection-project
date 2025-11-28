@@ -1,8 +1,9 @@
 from .logger import setup_logging
-from .result import save_config, setup_result_directory
+from .result import *
 
 __all__ = [
     'setup_logging',
     'setup_result_directory',
     'save_config',
+    'visualize_graph',
 ]
