@@ -12,10 +12,10 @@ if __name__ == '__main__':
 
     with open(args.config, encoding='utf-8') as f:
         config = yaml.safe_load(f)
-        
+
     result_dir = setup_result_directory(config)
     save_config(config, result_dir)
-    
+
     logger = setup_logging(log_path=result_dir)
 
     pipeline = DataProtectionPipeline(config, result_dir)
