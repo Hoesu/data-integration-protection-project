@@ -8,3 +8,4 @@ data:
 preprocess:
   exclude_columns: []
   imputation_neighbors: 5
+  threshold_percentage: 0.2
