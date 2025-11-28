@@ -1,9 +1,12 @@
 import logging
 
+import numpy as np
+import networkx as nx
 from sqlalchemy import Engine
 
 from src.database import Base, execute_query
 from src.preprocess import allocate_metadata, impute_data
+from src.metric import pairwise_distance
 
 logger = logging.getLogger('project.builder')
 
@@ -22,7 +25,17 @@ class DataProtectionPipeline:
         self.data = impute_data(self.data, self.metadata, self.config)
 
     def _build_graph(self):
-        pass
+        node_identifier = self.config['graph']['node_identifier']
+        scale_parameter = self.config['graph']['scale_parameter']
+        distance_matrix = pairwise_distance(
+            data=self.data,
+            metadata=self.metadata
+        )
+        adjacency_matrix = np.exp(-distance_matrix / scale_parameter)
+        self.graph = nx.from_numpy_array(
+            A=adjacency_matrix,
+            nodelist=self.data[node_identifier].tolist()
+        )
 
     def _calculate_risk(self):
         pass
@@ -41,12 +54,13 @@ class DataProtectionPipeline:
             logger.info('Pipeline completed (data insertion mode)')
             return
 
-        self._prepare_data()
+        self._prepare_data(engine)
         logger.info(f'Data shape: {self.data.shape}')
-        logger.info(f'Properties: {self.properties}')
+        logger.info(f'Metadata: {self.metadata}')
 
         self._build_graph()
         logger.info('Graph built')
+        breakpoint()
 
         self._calculate_risk()
         logger.info('Risk calculated')
