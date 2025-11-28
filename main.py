@@ -2,8 +2,7 @@ import argparse
 
 import yaml
 
-from src import DataProtectionPipeline, setup_logging
-from src.utils import save_config, setup_result_directory
+from src import *
 
 
 if __name__ == '__main__':
