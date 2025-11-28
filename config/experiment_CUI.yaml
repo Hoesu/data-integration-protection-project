@@ -7,5 +7,9 @@ data:
 
 preprocess:
   exclude_columns: ["기준년월", "발급회원번호"]
-  imputation_neighbors: 5,
+  imputation_neighbors: 5
   threshold_percentage: 0.2
+
+graph:
+  node_identifier: "발급회원번호"
+  scale_parameter: 1.0

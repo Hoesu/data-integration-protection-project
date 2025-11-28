@@ -9,3 +9,7 @@ preprocess:
   exclude_columns: []
   imputation_neighbors: 5
   threshold_percentage: 0.2
+
+graph:
+  node_identifier: ""
+  scale_parameter: 1.0
