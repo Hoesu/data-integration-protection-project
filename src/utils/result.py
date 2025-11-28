@@ -45,5 +45,5 @@ def save_config(config: dict, result_dir: Path) -> None:
         결과 디렉토리 경로.
     """
     config_filename = result_dir / "config.yaml"
-    with open(config_filename, "w") as f:
-        yaml.dump(config, f)
+    with open(config_filename, encoding='utf-8', mode="w") as f:
+        yaml.dump(config, stream=f, allow_unicode=True)
