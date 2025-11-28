@@ -12,5 +12,5 @@ preprocess:
 
 graph:
   node_identifier: "발급회원번호"
-  scale_parameter: 1.0
+  scale_parameter: 1.7
   edge_threshold: 0.8

@@ -6,5 +6,6 @@ __all__ = [
     'save_config',
     'setup_logging',
     'setup_result_directory',
+    'visualize_adjacency_matrix',
     'visualize_graph',
 ]

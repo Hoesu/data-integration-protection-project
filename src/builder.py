@@ -8,7 +8,7 @@ from sqlalchemy import Engine
 from src.database import Base, execute_query
 from src.metric import pairwise_distance
 from src.preprocess import allocate_metadata, impute_data
-from src.utils import visualize_graph
+from src.utils import visualize_adjacency_matrix, visualize_graph
 
 logger = logging.getLogger('project.builder')
 
@@ -39,6 +39,7 @@ class DataProtectionPipeline:
         adjacency_matrix = np.exp(-distance_matrix / scale_parameter)
         adjacency_matrix[adjacency_matrix < threshold] = 0
         np.fill_diagonal(adjacency_matrix, 0)
+        self.adjacency_matrix = adjacency_matrix
 
         self.graph = nx.from_numpy_array(
             A=adjacency_matrix,
@@ -49,6 +50,11 @@ class DataProtectionPipeline:
         pass
 
     def _save_results(self):
+        visualize_adjacency_matrix(
+            adjacency_matrix=self.adjacency_matrix,
+            result_dir=self.result_dir,
+            config=self.config
+        )
         visualize_graph(
             graph=self.graph,
             result_dir=self.result_dir,
