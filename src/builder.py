@@ -38,6 +38,7 @@ class DataProtectionPipeline:
         )
         adjacency_matrix = np.exp(-distance_matrix / scale_parameter)
         adjacency_matrix[adjacency_matrix < threshold] = 0
+        np.fill_diagonal(adjacency_matrix, 0)
 
         self.graph = nx.from_numpy_array(
             A=adjacency_matrix,
