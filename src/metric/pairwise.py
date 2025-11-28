@@ -28,5 +28,6 @@ def pairwise_distance(
                 x=data.iloc[i].to_dict(), y=data.iloc[j].to_dict(), metadata=metadata
             )
             distance_matrix[j, i] = distance_matrix[i, j]
-    normalized_matrix = distance_matrix / np.max(distance_matrix)
+    maximum_distance = np.float32(np.sqrt(len([col for col in metadata if metadata[col]['type'] != 'exclude'])))
+    normalized_matrix = distance_matrix / maximum_distance
     return normalized_matrix
