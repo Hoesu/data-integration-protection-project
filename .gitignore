@@ -6,6 +6,7 @@
 *.ipynb
 logs/
 data/
+results/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
