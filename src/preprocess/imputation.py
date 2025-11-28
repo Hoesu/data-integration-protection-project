@@ -54,8 +54,8 @@ def _impute_row(
     missing_columns = [col for col in target_row if target_row[col] is None]
     ## 레퍼런스 테이블 모든 행에 대하여 target_row와의 heom distance 계산
     distances = []
-    for idx in reference.index:
-        reference_dict = reference.iloc[idx].to_dict()
+    for i in range(len(reference)):
+        reference_dict = reference.iloc[i].to_dict()
         distance = heom_distance(
             x=target_row,
             y=reference_dict,
