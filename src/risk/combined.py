@@ -6,20 +6,62 @@ from .identity import calculate_identity_risk
 from .attribute import calculate_attribute_risk
 
 
+def _normalize_risks(idr: np.ndarray, adr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    IDR과 ADR을 0-1 범위로 정규화합니다.
+    
+    Min-Max 정규화를 사용하여 두 위험도를 동일한 스케일로 변환합니다.
+    
+    Parameters
+    ----------
+    idr : np.ndarray
+        식별자 노출위험 배열
+    adr : np.ndarray
+        속성 노출위험 배열
+        
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        정규화된 (IDR, ADR) 튜플
+    """
+    # 0으로 나누기 방지를 위한 작은 값
+    eps = 1e-10
+    
+    # IDR 정규화
+    idr_min, idr_max = idr.min(), idr.max()
+    idr_range = idr_max - idr_min
+    idr_normalized = (idr - idr_min) / (idr_range + eps) if idr_range > eps else np.zeros_like(idr)
+    
+    # ADR 정규화
+    adr_min, adr_max = adr.min(), adr.max()
+    adr_range = adr_max - adr_min
+    adr_normalized = (adr - adr_min) / (adr_range + eps) if adr_range > eps else np.zeros_like(adr)
+    
+    return idr_normalized, adr_normalized
+
+
 def calculate_max_disclosure_risk(
     graph: nx.Graph,
     alpha: float = 1.0,
     beta: float = 1.0,
+    method: str = 'max',
 ) -> np.ndarray:
     """
     각 노드에 대한 최종 노출위험(MDR)을 계산합니다.
     
-    두 위험 차원(식별자 노출위험, 속성 노출위험)은 서로 상반된 방향성을 지니므로,
-    개별 관측치의 최종 노출위험 척도는 두 위험 중 더 높은 값을 취하는 방식으로 정의합니다.
+    여러 방법을 통해 IDR과 ADR을 결합할 수 있습니다:
     
-    MDR_i = max(α * IDR_i, β * ADR_i)
+    1. 'max': 두 위험 중 더 높은 값 선택 (기본값)
+       MDR_i = max(α * IDR_i, β * ADR_i)
     
-    이를 통해 관측치 단위에서의 가장 취약한 방향의 위험을 대표값으로 제시할 수 있습니다.
+    2. 'normalized_sum': 정규화 후 합산
+       MDR_i = normalized(IDR_i) + normalized(ADR_i)
+    
+    3. 'normalized_weighted_avg': 정규화 후 가중 평균
+       MDR_i = α * normalized(IDR_i) + β * normalized(ADR_i)
+    
+    4. 'geometric_mean': 기하 평균
+       MDR_i = sqrt((α * IDR_i) * (β * ADR_i))
     
     Parameters
     ----------
@@ -29,6 +71,9 @@ def calculate_max_disclosure_risk(
         식별자 노출위험에 대한 가중치 (기본값: 1.0)
     beta : float, optional
         속성 노출위험에 대한 가중치 (기본값: 1.0)
+    method : str, optional
+        위험도 결합 방법: 'max', 'normalized_sum', 'normalized_weighted_avg', 'geometric_mean'
+        (기본값: 'max')
         
     Returns
     -------
@@ -40,16 +85,58 @@ def calculate_max_disclosure_risk(
     --------
     >>> graph = nx.Graph()
     >>> graph.add_edge(0, 1, weight=0.8)
-    >>> mdr = calculate_max_disclosure_risk(graph, alpha=1.0, beta=1.0)
+    >>> mdr = calculate_max_disclosure_risk(graph, method='normalized_sum')
     >>> mdr[0]
     0.xxx
     """
-    # TODO: calculate_identity_risk(graph) 호출하여 IDR 배열 획득
-    # TODO: calculate_attribute_risk(graph) 호출하여 ADR 배열 획득
-    # TODO: α * IDR_i와 β * ADR_i를 계산
-    # TODO: 각 노드 i에 대해 max(α * IDR_i, β * ADR_i) 계산
-    # TODO: 계산된 MDR 배열 반환
-    pass
+    # calculate_identity_risk(graph) 호출하여 IDR 배열 획득
+    idr = calculate_identity_risk(graph)
+    
+    # calculate_attribute_risk(graph) 호출하여 ADR 배열 획득
+    adr = calculate_attribute_risk(graph)
+    
+    # 방법에 따라 MDR 계산
+    if method == 'max':
+        # 원래 방법: 두 위험 중 더 높은 값
+        weighted_idr = alpha * idr
+        weighted_adr = beta * adr
+        mdr = np.maximum(weighted_idr, weighted_adr)
+    
+    elif method == 'normalized_sum':
+        # 정규화 후 합산: 두 위험을 동일한 스케일로 맞춘 후 합산
+        idr_norm, adr_norm = _normalize_risks(idr, adr)
+        mdr = idr_norm + adr_norm
+    
+    elif method == 'normalized_weighted_avg':
+        # 정규화 후 가중 평균: 정규화 후 가중치 적용
+        idr_norm, adr_norm = _normalize_risks(idr, adr)
+        # 가중치 정규화 (합이 1이 되도록)
+        total_weight = alpha + beta
+        if total_weight > 0:
+            alpha_norm = alpha / total_weight
+            beta_norm = beta / total_weight
+        else:
+            alpha_norm = 0.5
+            beta_norm = 0.5
+        mdr = alpha_norm * idr_norm + beta_norm * adr_norm
+    
+    elif method == 'geometric_mean':
+        # 기하 평균: 두 위험의 곱의 제곱근
+        weighted_idr = alpha * idr
+        weighted_adr = beta * adr
+        # 음수 방지 및 0 처리
+        weighted_idr = np.maximum(weighted_idr, 1e-10)
+        weighted_adr = np.maximum(weighted_adr, 1e-10)
+        mdr = np.sqrt(weighted_idr * weighted_adr)
+    
+    else:
+        raise ValueError(
+            f"지원하지 않는 방법: {method}. "
+            "사용 가능한 방법: 'max', 'normalized_sum', 'normalized_weighted_avg', 'geometric_mean'"
+        )
+    
+    # 계산된 MDR 배열 반환
+    return mdr
 
 
 def calculate_dataset_risk(
@@ -82,15 +169,32 @@ def calculate_dataset_risk(
     >>> dataset_risk
     0.95  # 상위 10% (1개)의 평균: 1.0
     """
-    # TODO: mdr 배열이 비어있지 않은지 검증
-    # TODO: top_percent가 0과 100 사이인지 검증
-    # TODO: 상위 n%에 해당하는 개수 계산: n = len(mdr) * (top_percent / 100)
-    # TODO: n이 0보다 작으면 1로 설정 (최소 1개)
-    # TODO: mdr 배열을 내림차순으로 정렬
-    # TODO: 상위 n개의 값 추출
-    # TODO: 추출된 값들의 평균 계산
-    # TODO: 평균값 반환
-    pass
+    # mdr 배열이 비어있지 않은지 검증
+    if len(mdr) == 0:
+        raise ValueError("MDR 배열이 비어있습니다.")
+    
+    # top_percent가 0과 100 사이인지 검증
+    if not (0.0 <= top_percent <= 100.0):
+        raise ValueError(f"top_percent는 0과 100 사이의 값이어야 합니다. 현재 값: {top_percent}")
+    
+    # 상위 n%에 해당하는 개수 계산: n = len(mdr) * (top_percent / 100)
+    n = int(len(mdr) * (top_percent / 100.0))
+    
+    # n이 0보다 작으면 1로 설정 (최소 1개)
+    if n < 1:
+        n = 1
+    
+    # mdr 배열을 내림차순으로 정렬
+    sorted_mdr = np.sort(mdr)[::-1]
+    
+    # 상위 n개의 값 추출
+    top_values = sorted_mdr[:n]
+    
+    # 추출된 값들의 평균 계산
+    dataset_risk = float(np.mean(top_values))
+    
+    # 평균값 반환
+    return dataset_risk
 
 
 def calculate_risk(
@@ -115,6 +219,11 @@ def calculate_risk(
         - alpha: 식별자 노출위험 가중치 (기본값: 1.0)
         - beta: 속성 노출위험 가중치 (기본값: 1.0)
         - top_percent: 데이터셋 위험 계산 시 상위 퍼센트 (기본값: 5.0)
+        - method: 위험도 결합 방법 (기본값: 'max')
+            - 'max': 두 위험 중 더 높은 값 선택
+            - 'normalized_sum': 정규화 후 합산
+            - 'normalized_weighted_avg': 정규화 후 가중 평균
+            - 'geometric_mean': 기하 평균
         
     Returns
     -------
@@ -125,6 +234,7 @@ def calculate_risk(
             'attribute_risk': np.ndarray,     # 각 노드의 ADR 값
             'max_disclosure_risk': np.ndarray, # 각 노드의 MDR 값
             'dataset_risk': float,            # 데이터셋 단위 위험
+            'node_identifiers': np.ndarray,   # 각 노드의 식별자 (발급회원번호 등)
             'risk_by_row': pd.DataFrame,      # 행별 위험도 정보 (선택적)
         }
         
@@ -136,20 +246,48 @@ def calculate_risk(
     >>> risk_dict['max_disclosure_risk'][0]
     0.42
     """
-    # TODO: config에서 파라미터 추출
-    #   - alpha: 기본값 1.0
-    #   - beta: 기본값 1.0
-    #   - top_percent: 기본값 5.0
-    # TODO: calculate_identity_risk(graph) 호출하여 IDR 계산
-    # TODO: calculate_attribute_risk(graph) 호출하여 ADR 계산
-    # TODO: calculate_max_disclosure_risk(graph, alpha, beta) 호출하여 MDR 계산
-    # TODO: calculate_dataset_risk(mdr, top_percent) 호출하여 데이터셋 위험 계산
-    # TODO: 결과 딕셔너리 구성:
-    #   - 'identity_risk': IDR 배열
-    #   - 'attribute_risk': ADR 배열
-    #   - 'max_disclosure_risk': MDR 배열
-    #   - 'dataset_risk': 데이터셋 위험 값
-    #   - 'risk_by_row': DataFrame (선택적, data와 위험도 정보를 결합)
-    # TODO: 결과 딕셔너리 반환
-    pass
-
+    # config에서 파라미터 추출
+    # alpha: 기본값 1.0
+    alpha = config.get('risk', {}).get('alpha', 1.0)
+    # beta: 기본값 1.0
+    beta = config.get('risk', {}).get('beta', 1.0)
+    # top_percent: 기본값 5.0
+    top_percent = config.get('risk', {}).get('top_percent', 5.0)
+    # method: 기본값 'max'
+    method = config.get('risk', {}).get('method', 'max')
+    
+    # calculate_identity_risk(graph) 호출하여 IDR 계산
+    idr = calculate_identity_risk(graph)
+    
+    # calculate_attribute_risk(graph) 호출하여 ADR 계산
+    adr = calculate_attribute_risk(graph)
+    
+    # calculate_max_disclosure_risk(graph, alpha, beta, method) 호출하여 MDR 계산
+    mdr = calculate_max_disclosure_risk(graph, alpha=alpha, beta=beta, method=method)
+    
+    # calculate_dataset_risk(mdr, top_percent) 호출하여 데이터셋 위험 계산
+    dataset_risk = calculate_dataset_risk(mdr, top_percent=top_percent)
+    
+    # 그래프의 노드 리스트 가져오기 (정렬된 순서)
+    node_list = sorted(graph.nodes())
+    
+    # 결과 딕셔너리 구성
+    result = {
+        'identity_risk': idr,
+        'attribute_risk': adr,
+        'max_disclosure_risk': mdr,
+        'dataset_risk': dataset_risk,
+        'node_identifiers': np.array(node_list),  # 노드 식별자 추가
+    }
+    
+    # risk_by_row: DataFrame (선택적, data와 위험도 정보를 결합)
+    # 노드 순서와 데이터프레임 인덱스가 일치한다고 가정
+    if len(data) == len(mdr):
+        risk_by_row = data.copy()
+        risk_by_row['identity_risk'] = idr
+        risk_by_row['attribute_risk'] = adr
+        risk_by_row['max_disclosure_risk'] = mdr
+        result['risk_by_row'] = risk_by_row
+    
+    # 결과 딕셔너리 반환
+    return result

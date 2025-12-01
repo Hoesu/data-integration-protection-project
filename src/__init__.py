@@ -4,6 +4,7 @@ from .utils import *
 __all__ = [
     'DataProtectionPipeline',
     'save_config',
+    'save_risk_results',
     'setup_logging',
     'setup_result_directory',
     'visualize_adjacency_matrix',
