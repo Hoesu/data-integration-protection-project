@@ -4,6 +4,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
 import yaml
 
 
@@ -198,3 +199,107 @@ def visualize_graph(
     plt.tight_layout()
     plt.savefig(graph_filename, dpi=300, bbox_inches='tight')
     plt.close()
+
+
+def save_risk_results(
+    risk_results: dict,
+    result_dir: Path,
+) -> None:
+    """
+    위험도 계산 결과를 파일로 저장합니다.
+    
+    Parameters
+    ----------
+    risk_results : dict
+        위험도 계산 결과 딕셔너리
+        {
+            'identity_risk': np.ndarray,
+            'attribute_risk': np.ndarray,
+            'max_disclosure_risk': np.ndarray,
+            'dataset_risk': float,
+            'risk_by_row': pd.DataFrame (선택적),
+        }
+    result_dir : Path
+        결과 저장 디렉토리 경로.
+    """
+    # 위험도 요약 정보를 텍스트 파일로 저장
+    summary_filename = result_dir / "risk_summary.txt"
+    with open(summary_filename, 'w', encoding='utf-8') as f:
+        f.write("=" * 60 + "\n")
+        f.write("위험도 계산 결과 요약\n")
+        f.write("=" * 60 + "\n\n")
+        
+        f.write(f"데이터셋 전체 위험도: {risk_results['dataset_risk']:.6f}\n\n")
+        
+        idr = risk_results['identity_risk']
+        adr = risk_results['attribute_risk']
+        mdr = risk_results['max_disclosure_risk']
+        
+        f.write("식별자 노출위험 (IDR) 통계:\n")
+        f.write(f"  평균: {np.mean(idr):.6f}\n")
+        f.write(f"  표준편차: {np.std(idr):.6f}\n")
+        f.write(f"  최소값: {np.min(idr):.6f}\n")
+        f.write(f"  최대값: {np.max(idr):.6f}\n")
+        f.write(f"  중앙값: {np.median(idr):.6f}\n\n")
+        
+        f.write("속성 노출위험 (ADR) 통계:\n")
+        f.write(f"  평균: {np.mean(adr):.6f}\n")
+        f.write(f"  표준편차: {np.std(adr):.6f}\n")
+        f.write(f"  최소값: {np.min(adr):.6f}\n")
+        f.write(f"  최대값: {np.max(adr):.6f}\n")
+        f.write(f"  중앙값: {np.median(adr):.6f}\n\n")
+        
+        f.write("최종 노출위험 (MDR) 통계:\n")
+        f.write(f"  평균: {np.mean(mdr):.6f}\n")
+        f.write(f"  표준편차: {np.std(mdr):.6f}\n")
+        f.write(f"  최소값: {np.min(mdr):.6f}\n")
+        f.write(f"  최대값: {np.max(mdr):.6f}\n")
+        f.write(f"  중앙값: {np.median(mdr):.6f}\n\n")
+        
+        # 상위 위험 노드 정보
+        top_n = min(10, len(mdr))
+        top_indices = np.argsort(mdr)[::-1][:top_n]
+        f.write(f"상위 {top_n}개 위험 노드:\n")
+        f.write("-" * 60 + "\n")
+        # 노드 식별자가 있으면 포함
+        if 'node_identifiers' in risk_results:
+            node_ids = risk_results['node_identifiers']
+            f.write(f"{'순위':<6} {'노드ID':<20} {'IDR':<12} {'ADR':<12} {'MDR':<12}\n")
+            f.write("-" * 60 + "\n")
+            for rank, idx in enumerate(top_indices, 1):
+                f.write(f"{rank:<6} {str(node_ids[idx]):<20} {idr[idx]:<12.6f} {adr[idx]:<12.6f} {mdr[idx]:<12.6f}\n")
+        else:
+            f.write(f"{'순위':<6} {'노드인덱스':<12} {'IDR':<12} {'ADR':<12} {'MDR':<12}\n")
+            f.write("-" * 60 + "\n")
+            for rank, idx in enumerate(top_indices, 1):
+                f.write(f"{rank:<6} {idx:<12} {idr[idx]:<12.6f} {adr[idx]:<12.6f} {mdr[idx]:<12.6f}\n")
+    
+    # 위험도 배열을 CSV로 저장
+    risk_array_filename = result_dir / "risk_values.csv"
+    # 노드 식별자가 있으면 포함
+    if 'node_identifiers' in risk_results:
+        risk_df = pd.DataFrame({
+            'node_identifier': risk_results['node_identifiers'],
+            'identity_risk': risk_results['identity_risk'],
+            'attribute_risk': risk_results['attribute_risk'],
+            'max_disclosure_risk': risk_results['max_disclosure_risk'],
+        })
+    else:
+        # 노드 식별자가 없으면 인덱스 사용
+        risk_df = pd.DataFrame({
+            'node_index': range(len(risk_results['identity_risk'])),
+            'identity_risk': risk_results['identity_risk'],
+            'attribute_risk': risk_results['attribute_risk'],
+            'max_disclosure_risk': risk_results['max_disclosure_risk'],
+        })
+
+    # 수치형 컬럼은 소수 넷째 자리에서 반올림
+    numeric_cols = [col for col in risk_df.columns if col != 'node_identifier' and col != 'node_index']
+    risk_df[numeric_cols] = risk_df[numeric_cols].round(4)
+
+    risk_df.to_csv(risk_array_filename, index=False, encoding='utf-8')
+    
+    # risk_by_row가 있으면 저장
+    if 'risk_by_row' in risk_results and risk_results['risk_by_row'] is not None:
+        risk_by_row_filename = result_dir / "risk_by_row.csv"
+        risk_results['risk_by_row'].to_csv(risk_by_row_filename, index=False, encoding='utf-8')

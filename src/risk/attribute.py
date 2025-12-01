@@ -12,8 +12,17 @@ def calculate_attribute_risk(
     유사성을 공유하여 특정 속성 조합이 노출될 경우 나머지 속성까지 추론
     가능성이 높아질 때 증가할 것으로 예상합니다.
     
-    이는 weighted clustering coefficient를 활용하여 계산됩니다:
-    ADR_i = 1 / (S_i(k_i-1)) * sum_{j≠i} sum_{k≠i,j} ((w_ij + w_ik)/2 * a_jk * w_jk)
+    이는 weighted clustering coefficient를 활용하여 계산됩니다.
+
+    구현에서는 표준 weighted clustering coefficient 정의와 유사하게,
+    다음과 같이 **w_jk 항을 제거한** 형태를 사용합니다:
+
+        ADR_i = 1 / (S_i(k_i-1)) * sum_{j≠i} sum_{k≠i,j} ((w_ij + w_ik)/2 * a_jk)
+
+    이렇게 하면:
+    - i와 이웃들(j, k) 간의 연결 강도 (w_ij, w_ik)를 중심으로
+    - j-k 간에 엣지가 존재하는지 여부(a_jk)만 반영하여
+    - i 주변의 삼각관계 밀집도를 안정적으로 측정할 수 있습니다.
     
     여기서:
     - k_i: 노드 i의 이웃 수
@@ -49,25 +58,63 @@ def calculate_attribute_risk(
     >>> adr[0]  # 노드 0의 ADR
     0.xxx  # 계산된 값
     """
-    # TODO: 그래프의 노드 개수 확인
-    # TODO: 노드 개수만큼의 빈 배열 초기화 (ADR 값을 저장할 배열)
-    # TODO: 각 노드 i에 대해:
-    #   - 노드 i의 이웃 노드 리스트 추출 (graph.neighbors(i) 또는 graph[i])
-    #   - k_i = 이웃 노드의 개수 계산
-    #   - S_i 계산: 노드 i에 연결된 모든 엣지의 가중치 합
-    #   - k_i가 1 이하인 경우 ADR_i = 0으로 설정하고 다음 노드로 (삼각관계 불가능)
-    #   - 이웃 노드 쌍 (j, k)에 대해 (j ≠ i, k ≠ i, j ≠ k):
-    #     * 노드 j와 k가 연결되어 있는지 확인 (graph.has_edge(j, k))
-    #     * 연결되어 있다면:
-    #       - w_ij = graph[i][j]['weight']
-    #       - w_ik = graph[i][k]['weight']
-    #       - w_jk = graph[j][k]['weight']
-    #       - a_jk = 1
-    #       - (w_ij + w_ik) / 2 * a_jk * w_jk 계산하여 누적
-    #     * 연결되어 있지 않다면 a_jk = 0이므로 스킵
-    #   - ADR_i = (누적된 합) / (S_i * (k_i - 1)) 계산
-    #     (분모가 0인 경우 처리 필요)
-    #   - 배열의 i번째 위치에 ADR_i 값 저장
-    # TODO: 계산된 ADR 배열 반환
-    pass
+    # 그래프의 노드 개수 확인
+    num_nodes = graph.number_of_nodes()
+    
+    # 노드 개수만큼의 빈 배열 초기화 (ADR 값을 저장할 배열)
+    adr_array = np.zeros(num_nodes, dtype=np.float64)
+    
+    # 노드 리스트를 정렬하여 일관된 인덱싱 보장
+    node_list = sorted(graph.nodes())
+    node_to_index = {node: idx for idx, node in enumerate(node_list)}
+    
+    # 각 노드 i에 대해:
+    for node in node_list:
+        idx = node_to_index[node]
+        
+        # 노드 i의 이웃 노드 리스트 추출
+        neighbors = list(graph.neighbors(node))
+        
+        # k_i = 이웃 노드의 개수 계산
+        k_i = len(neighbors)
+        
+        # S_i 계산: 노드 i에 연결된 모든 엣지의 가중치 합
+        S_i = 0.0
+        for neighbor in neighbors:
+            edge_weight = graph[node][neighbor].get('weight', 0.0)
+            S_i += edge_weight
+        
+        # k_i가 1 이하인 경우 ADR_i = 0으로 설정하고 다음 노드로 (삼각관계 불가능)
+        if k_i <= 1:
+            adr_array[idx] = 0.0
+            continue
+        
+        # 이웃 노드 쌍 (j, k)에 대해 (j ≠ i, k ≠ i, j ≠ k):
+        # 개선된 수식: 표준 weighted clustering coefficient에 맞게 w_jk를 제거
+        # ADR_i ∝ sum_{j≠i} sum_{k≠i,j} ((w_ij + w_ik)/2 * a_jk)
+        # (w_ij + w_ik)/2는 대칭이므로 j < k로 제한해도 결과는 동일 (효율성 향상)
+        cumulative_sum = 0.0
+        for idx_j, j in enumerate(neighbors):
+            for k in neighbors[idx_j + 1:]:  # j < k를 보장하여 중복 계산 방지
+                
+                # 노드 j와 k가 연결되어 있는지 확인 (a_jk = 1 if connected, 0 otherwise)
+                if graph.has_edge(j, k):
+                    # w_ij: 노드 i와 j 간의 엣지 가중치
+                    w_ij = graph[node][j].get('weight', 0.0)
+                    # w_ik: 노드 i와 k 간의 엣지 가중치
+                    w_ik = graph[node][k].get('weight', 0.0)
+                    # 수식: (w_ij + w_ik) / 2 * a_jk, 여기서 a_jk = 1
+                    cumulative_sum += (w_ij + w_ik) / 2.0
+                # 연결되어 있지 않다면 a_jk = 0이므로 스킵
+        
+        # ADR_i = (누적된 합) / (S_i * (k_i - 1)) 계산
+        # 분모가 0인 경우 처리 필요
+        denominator = S_i * (k_i - 1)
+        if denominator > 0:
+            adr_array[idx] = cumulative_sum / denominator
+        else:
+            adr_array[idx] = 0.0
+    
+    # 계산된 ADR 배열 반환
+    return adr_array
 

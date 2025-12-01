@@ -14,3 +14,9 @@ graph:
   node_identifier: "발급회원번호"
   scale_parameter: 1.7
   edge_threshold: 0.8
+
+risk:
+  method: "normalized_sum"
+  alpha: 1.0
+  beta: 1.0
+  top_percent: 5.0

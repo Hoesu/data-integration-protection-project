@@ -8,7 +8,12 @@ from sqlalchemy import Engine
 from src.database import Base, execute_query
 from src.metric import pairwise_distance
 from src.preprocess import allocate_metadata, impute_data
-from src.utils import visualize_adjacency_matrix, visualize_graph
+from src.risk import calculate_risk
+from src.utils import (
+    save_risk_results,
+    visualize_adjacency_matrix,
+    visualize_graph,
+)
 
 logger = logging.getLogger('project.builder')
 
@@ -20,7 +25,7 @@ class DataProtectionPipeline:
         self.result_dir = result_dir
 
     def _insert_data(self, engine: Engine):
-        execute_query(engine, self.config)
+        self.inserted_rows = execute_query(engine, self.config)
 
     def _prepare_data(self, engine: Engine):
         self.data = execute_query(engine, self.config)
@@ -47,7 +52,11 @@ class DataProtectionPipeline:
         )
 
     def _calculate_risk(self):
-        pass
+        self.risk_results = calculate_risk(
+            graph=self.graph,
+            data=self.data,
+            config=self.config
+        )
 
     def _save_results(self):
         visualize_adjacency_matrix(
@@ -60,6 +69,12 @@ class DataProtectionPipeline:
             result_dir=self.result_dir,
             config=self.config
         )
+        # 위험도 결과 저장
+        if hasattr(self, 'risk_results'):
+            save_risk_results(
+                risk_results=self.risk_results,
+                result_dir=self.result_dir
+            )
 
     def run(self) -> None:
         logger.info('Pipeline started')
@@ -79,8 +94,9 @@ class DataProtectionPipeline:
         self._build_graph()
         logger.info('Graph built')
 
-        # self._calculate_risk()
-        # logger.info('Risk calculated')
+        self._calculate_risk()
+        logger.info('Risk calculated')
+        logger.info(f"Dataset risk: {self.risk_results['dataset_risk']:.4f}")
 
         self._save_results()
         logger.info('Results saved')
