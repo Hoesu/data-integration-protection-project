@@ -126,10 +126,12 @@ def visualize_adjacency_matrix(
 def visualize_graph(
     graph: nx.Graph,
     result_dir: Path,
-    config: dict
+    config: dict,
+    risk_results: dict = None
 ) -> None:
     """
     그래프를 시각화하고 저장.
+    위험도 결과가 제공되면 세 가지 위험도 기준으로 각각 그래프를 생성합니다.
 
     Parameters
     ----------
@@ -139,6 +141,13 @@ def visualize_graph(
         결과 저장 디렉토리 경로.
     config : dict
         설정 딕셔너리 (현재 미사용, 향후 확장 가능).
+    risk_results : dict, optional
+        위험도 계산 결과 딕셔너리. 제공되면 위험도에 따라 노드 색상을 매핑합니다.
+        {
+            'identity_risk_normalized': np.ndarray,
+            'attribute_risk_normalized': np.ndarray,
+            'max_disclosure_risk': np.ndarray,
+        }
     """
     # 한글 폰트 설정
     try:
@@ -154,16 +163,11 @@ def visualize_graph(
     except Exception:
         pass  # 폰트 설정 실패 시 기본 폰트 사용
 
-    graph_filename = result_dir / "graph.png"
-
-    # 레이아웃 계산 (엣지 가중치 고려)
+    # 레이아웃 계산 (엣지 가중치 고려) - 한 번만 계산하여 재사용
     try:
         pos = nx.spring_layout(graph, k=1, iterations=50)
     except Exception:
         pos = nx.spring_layout(graph)
-
-    plt.figure(figsize=(12, 10))
-    plt.axis('off')
 
     # 엣지 가중치 안전하게 추출
     edge_widths = []
@@ -171,14 +175,106 @@ def visualize_graph(
         weight = graph[u][v].get('weight', 1.0)
         edge_widths.append(max(0.5, weight * 2))
 
-    # 그래프 그리기
+    # 위험도 결과가 있으면 세 가지 그래프 생성
+    if risk_results is not None:
+        risk_types = [
+            ('identity_risk_normalized', '식별자 노출위험 (IDR)', 'graph_idr.png'),
+            ('attribute_risk_normalized', '속성 노출위험 (ADR)', 'graph_adr.png'),
+            ('max_disclosure_risk', '최종 노출위험 (MDR)', 'graph_mdr.png')
+        ]
+
+        for risk_key, risk_title, filename in risk_types:
+            if risk_key not in risk_results:
+                continue
+
+            risk_values = risk_results[risk_key]
+            
+            # 위험도 계산 시 정렬된 노드 리스트를 사용하므로, 여기서도 정렬된 순서 사용
+            # node_identifiers가 있으면 사용, 없으면 sorted(graph.nodes()) 사용
+            if 'node_identifiers' in risk_results:
+                sorted_node_list = list(risk_results['node_identifiers'])
+            else:
+                sorted_node_list = sorted(graph.nodes())
+            
+            # 정렬된 노드 리스트와 위험도 값 매핑 (인덱스 기반)
+            node_risk_map = {
+                node: risk_values[i] 
+                for i, node in enumerate(sorted_node_list) 
+                if i < len(risk_values)
+            }
+            
+            # 그래프의 실제 노드 순서에 맞춰 위험도 값 배열 생성
+            graph_node_list = list(graph.nodes())
+            node_colors = [node_risk_map.get(node, 0.0) for node in graph_node_list]
+
+            # 그래프 그리기
+            fig, ax = plt.subplots(figsize=(12, 10))
+            ax.axis('off')
+
+            # 위험도 값에 따라 색상 매핑 (초록색(낮음) -> 빨간색(높음))
+            # RdYlGn_r: Red-Yellow-Green reversed (빨강=높음, 초록=낮음)
+            cmap = plt.cm.RdYlGn_r
+            vmin = min(node_colors) if node_colors else 0.0
+            vmax = max(node_colors) if node_colors else 1.0
+
+            # 노드 그리기
+            nodes = nx.draw_networkx_nodes(
+                graph, pos,
+                node_size=800,
+                node_color=node_colors,
+                cmap=cmap,
+                vmin=vmin,
+                vmax=vmax,
+                alpha=0.9,
+                linewidths=1.5,
+                edgecolors='darkblue',
+                ax=ax
+            )
+
+            # 엣지 그리기
+            nx.draw_networkx_edges(
+                graph, pos,
+                width=edge_widths,
+                edge_color='gray',
+                alpha=0.6,
+                style='solid',
+                ax=ax
+            )
+
+            # 레이블 그리기
+            nx.draw_networkx_labels(
+                graph, pos,
+                font_size=10,
+                font_weight='bold',
+                font_family=plt.rcParams['font.family'],
+                ax=ax
+            )
+
+            # 컬러바 추가
+            if nodes is not None:
+                cbar = plt.colorbar(nodes, ax=ax)
+                cbar.set_label(risk_title, rotation=270, labelpad=20)
+
+            ax.set_title(f'Graph Visualization - {risk_title}', fontsize=14, fontweight='bold')
+
+            plt.tight_layout()
+            graph_filename = result_dir / filename
+            plt.savefig(graph_filename, dpi=300, bbox_inches='tight')
+            plt.close()
+
+    # 기본 그래프도 생성 (위험도 정보 없이)
+    graph_filename = result_dir / "graph.png"
+    fig, ax = plt.subplots(figsize=(12, 10))
+    ax.axis('off')
+
     nx.draw_networkx_nodes(
         graph, pos,
         node_size=800,
         node_color='lightblue',
         alpha=0.9,
         linewidths=1.5,
-        edgecolors='darkblue'
+        edgecolors='darkblue',
+        ax=ax
     )
 
     nx.draw_networkx_edges(
@@ -186,15 +282,19 @@ def visualize_graph(
         width=edge_widths,
         edge_color='gray',
         alpha=0.6,
-        style='solid'
+        style='solid',
+        ax=ax
     )
 
     nx.draw_networkx_labels(
         graph, pos,
         font_size=10,
         font_weight='bold',
-        font_family=plt.rcParams['font.family']
+        font_family=plt.rcParams['font.family'],
+        ax=ax
     )
+
+    ax.set_title('Graph Visualization (Default)', fontsize=14, fontweight='bold')
 
     plt.tight_layout()
     plt.savefig(graph_filename, dpi=300, bbox_inches='tight')

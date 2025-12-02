@@ -64,12 +64,13 @@ class DataProtectionPipeline:
             result_dir=self.result_dir,
             config=self.config
         )
+        risk_results = self.risk_results if hasattr(self, 'risk_results') else None
         visualize_graph(
             graph=self.graph,
             result_dir=self.result_dir,
-            config=self.config
+            config=self.config,
+            risk_results=risk_results
         )
-        # 위험도 결과 저장
         if hasattr(self, 'risk_results'):
             save_risk_results(
                 risk_results=self.risk_results,
