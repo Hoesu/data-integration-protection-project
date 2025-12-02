@@ -41,6 +41,7 @@ def allocate_metadata(data: pd.DataFrame, config: dict) -> dict:
     >>> metadata['gender']
     {'type': 'categorical'}
     """
+    logger.debug('Starting metadata allocation')
     exclude_columns = config['preprocess']['exclude_columns']
     metadata = {}
     for col in data.columns:
@@ -50,4 +51,8 @@ def allocate_metadata(data: pd.DataFrame, config: dict) -> dict:
             metadata[col] = {'type': 'numeric', 'max': data[col].max(), 'min': data[col].min()}
         else:
             metadata[col] = {'type': 'categorical'}
+
+    for item in metadata.items():
+        logger.debug(f'Column: {item[0]}, Type: {item[1]["type"]}')
+    logger.debug('Metadata allocation complete')
     return metadata

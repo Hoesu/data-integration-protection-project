@@ -72,7 +72,7 @@ def _impute_row(
     reference = reference.iloc[0:imputation_neighbors]
     ## 사용할 수 있는 참조 행이 남아있지 않으면 빈값 반환
     if len(reference) == 0:
-        logger.debug('조건을 만족하는 참조 행이 없습니다.')
+        logger.debug('No reference rows found for imputation')
         return imputed_values
     ## 각 결측 컬럼에 대하여 대체값 계산
     for column in missing_columns:
@@ -80,10 +80,12 @@ def _impute_row(
             ## 수치형 컬럼인 경우 평균값 계산
             average = reference[column].mean()
             imputed_values[column] = average
+            logger.debug(f'Imputed value for column: {column}, value: {imputed_values[column]}')
         elif metadata[column]['type'] == 'categorical':
             ## 범주형 컬럼인 경우 최빈값 계산
             counter = Counter(reference[column])
             imputed_values[column] = counter.most_common(1)[0][0]
+            logger.debug(f'Imputed value for column: {column}, value: {imputed_values[column]}')
     return imputed_values
 
 
@@ -138,21 +140,22 @@ def impute_data(
     threshold_distance = np.float32(maximum_distance * threshold_percentage)
 
     if len(reference) == 0:
-        logger.warning('결측치를 대체할 참조 데이터가 없습니다.')
+        logger.debug('No reference data found for imputation')
         return data
     elif len(reference) == len(data):
-        logger.info('결측치가 없어 보간 작업이 불필요합니다.')
+        logger.debug('No missing values found, skipping imputation')
         return data
     else:
-        logger.info('보간 작업을 시작합니다.')
-        logger.info(f'참조 행 개수: {len(reference)}개')
-        logger.info(f'결측치가 있는 행 개수: {len(na_indices)}개')
-        logger.info(f'이웃 개수: {imputation_neighbors}개')
-        logger.info(f'최대 거리 차이: {maximum_distance}')
-        logger.info(f'거리 차이 임계값 비율: {threshold_percentage}')
-        logger.info(f'거리 차이 임계값: {threshold_distance}')
+        logger.debug('Starting imputation')
+        logger.debug(f'Reference rows: {len(reference)}')
+        logger.debug(f'Missing rows: {len(na_indices)}')
+        logger.debug(f'Neighbors: {imputation_neighbors}')
+        logger.debug(f'Maximum distance: {maximum_distance}')
+        logger.debug(f'Threshold percentage: {threshold_percentage}')
+        logger.debug(f'Threshold distance: {threshold_distance}')
 
         for na_index in na_indices:
+            logger.debug(f'Imputing row: {na_index}')
             target_row = data.iloc[na_index].to_dict()
             imputed_values = _impute_row(
                 target_row=target_row,
@@ -163,4 +166,5 @@ def impute_data(
             )
             for col, value in imputed_values.items():
                 data.at[na_index, col] = value
+        logger.debug('Imputation complete')
         return data

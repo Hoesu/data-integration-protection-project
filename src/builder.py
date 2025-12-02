@@ -55,6 +55,8 @@ class DataProtectionPipeline:
             A=adjacency_matrix,
             nodelist=self.data[node_identifier].tolist()
         )
+        logger.debug(f'Graph nodes: {len(self.graph.nodes())}')
+        logger.debug(f'Graph edges: {len(self.graph.edges())}')
 
     def _calculate_risk(self):
         self.risk_results = calculate_risk(
@@ -69,21 +71,19 @@ class DataProtectionPipeline:
             result_dir=self.result_dir,
             config=self.config
         )
-        risk_results = self.risk_results if hasattr(self, 'risk_results') else None
         visualize_graph(
             graph=self.graph,
             result_dir=self.result_dir,
             config=self.config,
-            risk_results=risk_results
+            risk_results=self.risk_results
         )
-        if hasattr(self, 'risk_results'):
-            save_risk_results(
-                risk_results=self.risk_results,
-                result_dir=self.result_dir
-            )
+        save_risk_results(
+            risk_results=self.risk_results,
+            result_dir=self.result_dir
+        )
 
     def run(self) -> None:
-        logger.info('Pipeline started')
+        logger.info('🚀 Pipeline started')
         engine = Base.get_engine()
         Base.metadata.create_all(engine)
 
@@ -93,18 +93,20 @@ class DataProtectionPipeline:
             logger.info('Pipeline completed (data insertion mode)')
             return
 
+        logger.info('💽 Initiating data preparation')
         self._prepare_data(engine)
-        logger.info(f'Data shape: {self.data.shape}')
-        logger.info(f'Metadata: {self.metadata}')
+        logger.info('💽 Data preparation complete')
 
+        logger.info('🧩 Initiating graph construction')
         self._build_graph()
-        logger.info('Graph built')
+        logger.info('🧩 Graph construction complete')
 
+        logger.info('⚠️ Initiating risk calculation')
         self._calculate_risk()
-        logger.info('Risk calculated')
-        logger.info(f"Dataset risk: {self.risk_results['dataset_risk']:.4f}")
+        logger.info('⚠️ Risk calculation complete')
 
+        logger.info('💾 Saving results')
         self._save_results()
-        logger.info('Results saved')
+        logger.info('💾 Results saved')
 
-        logger.info('Pipeline completed')
+        logger.info('🎉 Pipeline completed')

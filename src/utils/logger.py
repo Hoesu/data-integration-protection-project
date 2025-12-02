@@ -27,8 +27,8 @@ def setup_logging(log_path: Path | None = None):
     log_filename = log_dir / "history.log"
     ## "project"라는 이름의 로거 가져오기
     logger = logging.getLogger("project")
-    ## 로거 레벨을 INFO로 설정
-    logger.setLevel(logging.INFO)
+    ## 로거 레벨을 DEBUG로 설정
+    logger.setLevel(logging.DEBUG)
     ## 기존 핸들러 제거 (중복 핸들러 방지)
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
@@ -39,7 +39,7 @@ def setup_logging(log_path: Path | None = None):
     )
     ## 파일 핸들러 생성 및 설정
     file_handler = logging.FileHandler(str(log_filename), encoding='utf-8')
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     ## 콘솔 핸들러 생성 및 설정
     console_handler = logging.StreamHandler()
