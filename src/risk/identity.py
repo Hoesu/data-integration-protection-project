@@ -27,20 +27,25 @@ def calculate_identity_risk(
     해석:
     - 평균 가중치(S_i / k_i)가 클수록, 주변과 강하게 연결되어 있으므로 위험이 낮아짐
     - 평균 가중치가 작거나 연결이 없으면, 고립된 노드로 보고 위험이 높아짐
-    
+
+    이론적 범위:
+    - 최소값: 0 (S_i가 매우 크거나 k_i가 매우 클 때, 즉 강하게 연결된 경우)
+    - 최대값: 1.0 (k_i = 0일 때, 즉 연결이 없는 고립된 노드)
+    - 일반 범위: 0 < IDR_i <= 1.0
+
     Parameters
     ----------
     graph : nx.Graph
         가중치가 포함된 NetworkX 그래프 객체
         엣지의 가중치는 'weight' 속성에 저장되어 있어야 합니다.
-        
+
     Returns
     -------
     np.ndarray
         각 노드에 대한 식별자 노출위험 값 (1차원 배열)
         배열의 인덱스는 노드 인덱스와 일치합니다.
         IDR_i 값이 높을수록 식별자 노출 위험이 높습니다.
-        
+
     Examples
     --------
     >>> graph = nx.Graph()
@@ -52,14 +57,14 @@ def calculate_identity_risk(
     """
     # 그래프의 노드 개수 확인
     num_nodes = graph.number_of_nodes()
-    
+
     # 노드 개수만큼의 빈 배열 초기화 (IDR 값을 저장할 배열)
     idr_array = np.zeros(num_nodes, dtype=np.float64)
-    
+
     # 노드 리스트를 정렬하여 일관된 인덱싱 보장
     node_list = sorted(graph.nodes())
     node_to_index = {node: idx for idx, node in enumerate(node_list)}
-    
+
     # 각 노드 i에 대해:
     for node in node_list:
         idx = node_to_index[node]
@@ -85,7 +90,7 @@ def calculate_identity_risk(
         else:
             avg_weight = S_i / k_i
             idr_array[idx] = 1.0 / (1.0 + avg_weight)
-    
+
     # 계산된 IDR 배열 반환
     return idr_array
 

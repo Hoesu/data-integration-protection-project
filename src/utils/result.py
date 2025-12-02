@@ -85,10 +85,10 @@ def visualize_adjacency_matrix(
         pass  # 폰트 설정 실패 시 기본 폰트 사용
 
     matrix_filename = result_dir / "adjacency_matrix.png"
-    
+
     # 히트맵 생성
     fig, ax = plt.subplots(figsize=(12, 10))
-    
+
     # 값이 클수록 진한 색, 작을수록 연한 색을 위한 colormap 사용
     im = ax.imshow(
         adjacency_matrix,
@@ -97,16 +97,16 @@ def visualize_adjacency_matrix(
         interpolation='nearest',
         origin='upper'
     )
-    
+
     # 컬러바 추가
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label('Edge Weight', rotation=270, labelpad=20)
-    
+
     # 축 레이블 및 제목
     ax.set_xlabel('Node Index', fontsize=12)
     ax.set_ylabel('Node Index', fontsize=12)
     ax.set_title('Adjacency Matrix Heatmap', fontsize=14, fontweight='bold')
-    
+
     # 격자 표시 (선택적, 행렬이 크면 생략 가능)
     if adjacency_matrix.shape[0] <= 50:
         ax.set_xticks(np.arange(adjacency_matrix.shape[1]))
@@ -118,7 +118,7 @@ def visualize_adjacency_matrix(
         tick_interval = max(1, adjacency_matrix.shape[0] // 20)
         ax.set_xticks(np.arange(0, adjacency_matrix.shape[1], tick_interval))
         ax.set_yticks(np.arange(0, adjacency_matrix.shape[0], tick_interval))
-    
+
     plt.tight_layout()
     plt.savefig(matrix_filename, dpi=300, bbox_inches='tight')
     plt.close()
@@ -207,16 +207,17 @@ def save_risk_results(
 ) -> None:
     """
     위험도 계산 결과를 파일로 저장합니다.
-    
+
     Parameters
     ----------
     risk_results : dict
         위험도 계산 결과 딕셔너리
         {
-            'identity_risk': np.ndarray,
-            'attribute_risk': np.ndarray,
-            'max_disclosure_risk': np.ndarray,
+            'identity_risk_normalized': np.ndarray,  # 정규화된 IDR (0~1)
+            'attribute_risk_normalized': np.ndarray,  # 정규화된 ADR (0~1)
+            'max_disclosure_risk': np.ndarray,  # MDR
             'dataset_risk': float,
+            'node_identifiers': np.ndarray (선택적),
             'risk_by_row': pd.DataFrame (선택적),
         }
     result_dir : Path
@@ -228,34 +229,35 @@ def save_risk_results(
         f.write("=" * 60 + "\n")
         f.write("위험도 계산 결과 요약\n")
         f.write("=" * 60 + "\n\n")
-        
+
         f.write(f"데이터셋 전체 위험도: {risk_results['dataset_risk']:.6f}\n\n")
-        
-        idr = risk_results['identity_risk']
-        adr = risk_results['attribute_risk']
+
+        # 정규화된 값만 사용 (원본 값은 더 이상 저장하지 않음)
+        idr_norm = risk_results['identity_risk_normalized']
+        adr_norm = risk_results['attribute_risk_normalized']
         mdr = risk_results['max_disclosure_risk']
-        
-        f.write("식별자 노출위험 (IDR) 통계:\n")
-        f.write(f"  평균: {np.mean(idr):.6f}\n")
-        f.write(f"  표준편차: {np.std(idr):.6f}\n")
-        f.write(f"  최소값: {np.min(idr):.6f}\n")
-        f.write(f"  최대값: {np.max(idr):.6f}\n")
-        f.write(f"  중앙값: {np.median(idr):.6f}\n\n")
-        
-        f.write("속성 노출위험 (ADR) 통계:\n")
-        f.write(f"  평균: {np.mean(adr):.6f}\n")
-        f.write(f"  표준편차: {np.std(adr):.6f}\n")
-        f.write(f"  최소값: {np.min(adr):.6f}\n")
-        f.write(f"  최대값: {np.max(adr):.6f}\n")
-        f.write(f"  중앙값: {np.median(adr):.6f}\n\n")
-        
+
+        f.write("식별자 노출위험 (IDR, 정규화됨) 통계:\n")
+        f.write(f"  평균: {np.mean(idr_norm):.6f}\n")
+        f.write(f"  표준편차: {np.std(idr_norm):.6f}\n")
+        f.write(f"  최소값: {np.min(idr_norm):.6f}\n")
+        f.write(f"  최대값: {np.max(idr_norm):.6f}\n")
+        f.write(f"  중앙값: {np.median(idr_norm):.6f}\n\n")
+
+        f.write("속성 노출위험 (ADR, 정규화됨) 통계:\n")
+        f.write(f"  평균: {np.mean(adr_norm):.6f}\n")
+        f.write(f"  표준편차: {np.std(adr_norm):.6f}\n")
+        f.write(f"  최소값: {np.min(adr_norm):.6f}\n")
+        f.write(f"  최대값: {np.max(adr_norm):.6f}\n")
+        f.write(f"  중앙값: {np.median(adr_norm):.6f}\n\n")
+
         f.write("최종 노출위험 (MDR) 통계:\n")
         f.write(f"  평균: {np.mean(mdr):.6f}\n")
         f.write(f"  표준편차: {np.std(mdr):.6f}\n")
         f.write(f"  최소값: {np.min(mdr):.6f}\n")
         f.write(f"  최대값: {np.max(mdr):.6f}\n")
         f.write(f"  중앙값: {np.median(mdr):.6f}\n\n")
-        
+
         # 상위 위험 노드 정보
         top_n = min(10, len(mdr))
         top_indices = np.argsort(mdr)[::-1][:top_n]
@@ -264,32 +266,32 @@ def save_risk_results(
         # 노드 식별자가 있으면 포함
         if 'node_identifiers' in risk_results:
             node_ids = risk_results['node_identifiers']
-            f.write(f"{'순위':<6} {'노드ID':<20} {'IDR':<12} {'ADR':<12} {'MDR':<12}\n")
-            f.write("-" * 60 + "\n")
+            f.write(f"{'순위':<6} {'노드ID':<20} {'IDR(norm)':<12} {'ADR(norm)':<12} {'MDR':<12}\n")
+            f.write("-" * 70 + "\n")
             for rank, idx in enumerate(top_indices, 1):
-                f.write(f"{rank:<6} {str(node_ids[idx]):<20} {idr[idx]:<12.6f} {adr[idx]:<12.6f} {mdr[idx]:<12.6f}\n")
+                f.write(f"{rank:<6} {str(node_ids[idx]):<20} {idr_norm[idx]:<12.6f} {adr_norm[idx]:<12.6f} {mdr[idx]:<12.6f}\n")
         else:
-            f.write(f"{'순위':<6} {'노드인덱스':<12} {'IDR':<12} {'ADR':<12} {'MDR':<12}\n")
-            f.write("-" * 60 + "\n")
+            f.write(f"{'순위':<6} {'노드인덱스':<12} {'IDR(norm)':<12} {'ADR(norm)':<12} {'MDR':<12}\n")
+            f.write("-" * 70 + "\n")
             for rank, idx in enumerate(top_indices, 1):
-                f.write(f"{rank:<6} {idx:<12} {idr[idx]:<12.6f} {adr[idx]:<12.6f} {mdr[idx]:<12.6f}\n")
-    
-    # 위험도 배열을 CSV로 저장
+                f.write(f"{rank:<6} {idx:<12} {idr_norm[idx]:<12.6f} {adr_norm[idx]:<12.6f} {mdr[idx]:<12.6f}\n")
+
+    # 위험도 배열을 CSV로 저장 (정규화된 값만 포함)
     risk_array_filename = result_dir / "risk_values.csv"
     # 노드 식별자가 있으면 포함
     if 'node_identifiers' in risk_results:
         risk_df = pd.DataFrame({
             'node_identifier': risk_results['node_identifiers'],
-            'identity_risk': risk_results['identity_risk'],
-            'attribute_risk': risk_results['attribute_risk'],
+            'identity_risk_normalized': risk_results['identity_risk_normalized'],
+            'attribute_risk_normalized': risk_results['attribute_risk_normalized'],
             'max_disclosure_risk': risk_results['max_disclosure_risk'],
         })
     else:
         # 노드 식별자가 없으면 인덱스 사용
         risk_df = pd.DataFrame({
-            'node_index': range(len(risk_results['identity_risk'])),
-            'identity_risk': risk_results['identity_risk'],
-            'attribute_risk': risk_results['attribute_risk'],
+            'node_index': range(len(risk_results['identity_risk_normalized'])),
+            'identity_risk_normalized': risk_results['identity_risk_normalized'],
+            'attribute_risk_normalized': risk_results['attribute_risk_normalized'],
             'max_disclosure_risk': risk_results['max_disclosure_risk'],
         })
 
@@ -298,7 +300,7 @@ def save_risk_results(
     risk_df[numeric_cols] = risk_df[numeric_cols].round(4)
 
     risk_df.to_csv(risk_array_filename, index=False, encoding='utf-8')
-    
+
     # risk_by_row가 있으면 저장
     if 'risk_by_row' in risk_results and risk_results['risk_by_row'] is not None:
         risk_by_row_filename = result_dir / "risk_by_row.csv"
