@@ -214,13 +214,13 @@ def visualize_graph(
             # 위험도 값에 따라 색상 매핑 (초록색(낮음) -> 빨간색(높음))
             # RdYlGn_r: Red-Yellow-Green reversed (빨강=높음, 초록=낮음)
             cmap = plt.cm.RdYlGn_r
-            vmin = min(node_colors) if node_colors else 0.0
-            vmax = max(node_colors) if node_colors else 1.0
+            vmin = 0.0
+            vmax = 1.0
 
             # 노드 그리기
             nodes = nx.draw_networkx_nodes(
                 graph, pos,
-                node_size=800,
+                node_size=300,
                 node_color=node_colors,
                 cmap=cmap,
                 vmin=vmin,
@@ -244,7 +244,7 @@ def visualize_graph(
             # 레이블 그리기
             nx.draw_networkx_labels(
                 graph, pos,
-                font_size=10,
+                font_size=6,
                 font_weight='bold',
                 font_family=plt.rcParams['font.family'],
                 ax=ax
@@ -269,7 +269,7 @@ def visualize_graph(
 
     nx.draw_networkx_nodes(
         graph, pos,
-        node_size=800,
+        node_size=300,
         node_color='lightblue',
         alpha=0.9,
         linewidths=1.5,
@@ -288,7 +288,7 @@ def visualize_graph(
 
     nx.draw_networkx_labels(
         graph, pos,
-        font_size=10,
+        font_size=6,
         font_weight='bold',
         font_family=plt.rcParams['font.family'],
         ax=ax
