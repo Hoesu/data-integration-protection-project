@@ -88,9 +88,10 @@ class DataProtectionPipeline:
         Base.metadata.create_all(engine)
 
         if self.config['data']['action'] == 'insert':
+            logger.info('💽 Initiating data insertion')
             self._insert_data()
-            logger.info(f'Data inserted: {self.inserted_rows} rows')
-            logger.info('Pipeline completed (data insertion mode)')
+            logger.info(f'💽 Data inserted: {self.inserted_rows} rows')
+            logger.info('🎉 Pipeline completed (data insertion mode)')
             return
 
         logger.info('💽 Initiating data preparation')
