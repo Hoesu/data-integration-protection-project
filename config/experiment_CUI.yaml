@@ -1,22 +1,34 @@
 data:
   action: "select"
   source_table: "CardUserInfo"
-  limit: 100
+  limit: 2000
   filters: {}
   order_by: []
+  sample_size: 300
 
 preprocess:
-  exclude_columns: ["기준년월", "발급회원번호"]
+  exclude_columns: [
+    "기준년월",
+    "발급회원번호",
+    "이용카드수_체크_가족",
+    "이용금액_R3M_체크_가족",
+    "연회비할인카드수_B0M",
+    "할인금액_기본연회비_B0M",
+    "할인금액_제휴연회비_B0M",
+    "상품관련면제카드수_B0M",
+    "임직원면제카드수_B0M",
+    "우수회원면제카드수_B0M",
+    "기타면제카드수_B0M"
+    ]
   imputation_neighbors: 5
   threshold_percentage: 0.2
 
 graph:
   node_identifier: "발급회원번호"
-  scale_parameter: 1.7
-  edge_threshold: 0.8
+  edge_threshold: 0.65
 
 risk:
-  method: "normalized_sum"
+  method: "max"
   alpha: 1.0
   beta: 1.0
   top_percent: 5.0

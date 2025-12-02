@@ -12,11 +12,10 @@ preprocess:
 
 graph:
   node_identifier: ""
-  scale_parameter: 1.0
   edge_threshold: 0.8
 
 risk:
-  method: "normalized_sum"
+  method: "max"
   alpha: 1.0
   beta: 1.0
   top_percent: 5.0

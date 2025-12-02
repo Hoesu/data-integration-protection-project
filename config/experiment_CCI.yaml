@@ -12,11 +12,10 @@ preprocess:
 
 graph:
   node_identifier: ""
-  scale_parameter: 1.0
   edge_threshold: 0.8
 
 risk:
-  method: "normalized_sum"  # 위험도 결합 방법: 'max', 'normalized_sum', 'normalized_weighted_avg', 'geometric_mean'
-  alpha: 1.0      # IDR(식별자 노출위험) 가중치 (normalized_weighted_avg 방법에서 사용)
-  beta: 1.0      # ADR(속성 노출위험) 가중치 (normalized_weighted_avg 방법에서 사용)
-  top_percent: 5.0  # 데이터셋 위험 계산 시 상위 퍼센트
+  method: "max"
+  alpha: 1.0
+  beta: 1.0
+  top_percent: 5.0

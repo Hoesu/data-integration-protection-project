@@ -28,20 +28,25 @@ class DataProtectionPipeline:
         self.inserted_rows = execute_query(engine, self.config)
 
     def _prepare_data(self, engine: Engine):
-        self.data = execute_query(engine, self.config)
+        fetch_size = self.config['data']['limit']
+        sample_size = self.config['data']['sample_size']
+        if sample_size < fetch_size:
+            self.data = execute_query(engine, self.config).sample(sample_size)
+            self.data.reset_index(drop=True, inplace=True)
+        else:
+            self.data = execute_query(engine, self.config)
         self.metadata = allocate_metadata(self.data, self.config)
         self.data = impute_data(self.data, self.metadata, self.config)
 
     def _build_graph(self):
         node_identifier = self.config['graph']['node_identifier']
-        scale_parameter = self.config['graph']['scale_parameter']
         threshold = self.config['graph']['edge_threshold']
 
         distance_matrix = pairwise_distance(
             data=self.data,
             metadata=self.metadata
         )
-        adjacency_matrix = np.exp(-distance_matrix / scale_parameter)
+        adjacency_matrix = 1 - distance_matrix
         adjacency_matrix[adjacency_matrix < threshold] = 0
         np.fill_diagonal(adjacency_matrix, 0)
         self.adjacency_matrix = adjacency_matrix
