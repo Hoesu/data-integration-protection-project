@@ -29,10 +29,14 @@ class DataProtectionPipeline:
 
     def _prepare_data(self, engine: Engine):
         fetch_size = self.config['data']['limit']
-        sample_size = self.config['data']['sample_size']
-        if sample_size < fetch_size:
-            self.data = execute_query(engine, self.config).sample(sample_size)
-            self.data.reset_index(drop=True, inplace=True)
+        do_sample = self.config['data']['do_sample']
+        if do_sample:
+            sample_size = self.config['data']['sample_size']
+            if sample_size < fetch_size:
+                self.data = execute_query(engine, self.config).sample(sample_size)
+                self.data.reset_index(drop=True, inplace=True)
+            else:
+                self.data = execute_query(engine, self.config)
         else:
             self.data = execute_query(engine, self.config)
         self.metadata = allocate_metadata(self.data, self.config)
