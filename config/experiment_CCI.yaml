@@ -4,6 +4,8 @@ data:
   limit: 100
   filters: {}
   order_by: []
+  do_sample: False
+  sample_size: 100
 
 preprocess:
   exclude_columns: []

@@ -1,10 +1,11 @@
 data:
   action: "select"
   source_table: "CardUserInfo"
-  limit: 2000
+  limit: 100
   filters: {}
-  order_by: []
-  sample_size: 300
+  order_by: ["발급회원번호"]
+  do_sample: False
+  sample_size: 100
 
 preprocess:
   exclude_columns: [
@@ -25,7 +26,7 @@ preprocess:
 
 graph:
   node_identifier: "발급회원번호"
-  edge_threshold: 0.65
+  edge_threshold: 0.60
 
 risk:
   method: "max"
